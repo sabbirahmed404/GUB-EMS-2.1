@@ -20,9 +20,15 @@ export default function Home() {
           ))}
         </div>
         <div className="text-center mt-12">
+<<<<<<< HEAD
           <Link 
             to="/events"
             className="inline-flex items-center bg-accent hover:bg-primary text-primary hover:text-white px-8 py-3 rounded-full font-semibold transition-colors duration-300"
+=======
+                    <Link
+            to="/events"
+            className="inline-flex items-center bg-primary hover:bg-accent text-white px-8 py-3 rounded-full font-semibold transition-colors duration-300"
+>>>>>>> feature-branch
           >
             View All Events
             <ArrowRight className="ml-2 h-5 w-5" />

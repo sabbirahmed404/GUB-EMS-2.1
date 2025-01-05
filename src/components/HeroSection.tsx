@@ -12,11 +12,19 @@ export default function HeroSection() {
           <h2 className="text-2xl mb-4">
             Transform Your Events into Unforgettable Experiences
           </h2>
+<<<<<<< HEAD
           <p className="text-lg opacity-90 mb-8">
             Streamline your event planning process with our comprehensive management system. 
             From registration to analytics, we provide all the tools you need to create 
             successful events that leave lasting impressions.
           </p>
+=======
+     <p className="text-lg opacity-90 mb-8 text-justify">
+    Streamline your event planning process with our comprehensive management system. 
+    From registration to analytics, we provide all the tools you need to create 
+    successful events that leave lasting impressions.
+</p>
+>>>>>>> feature-branch
         </div>
 
         {/* Right Column */}
