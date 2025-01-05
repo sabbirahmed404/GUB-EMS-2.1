@@ -49,11 +49,7 @@ export default function RegistrationForm() {
       </div>
       <button
         type="submit"
-<<<<<<< HEAD
-        className="w-full bg-accent hover:bg-primary text-primary hover:text-white py-3 px-6 rounded-full font-semibold transition-colors duration-300"
-=======
         className="w-full bg-primary hover:bg-accent text-white py-3 px-6 rounded-full font-semibold transition-colors duration-300"
->>>>>>> feature-branch
       >
         Get Started
       </button>
