@@ -28,11 +28,11 @@ export default function Footer() {
           </div>
           <div className="flex items-center space-x-2">
             <Mail className="h-6 w-6" />
-            <span>contact@gub-ems.com</span>
+            <span>contact@gubems.com</span>
           </div>
           <div className="flex items-center space-x-2 mt-2">
             <MapPin className="h-6 w-6" />
-            <span>+880 1234 567890</span>
+            <span>+880 1990607209</span>
           </div>
         </div>
 
