@@ -10,31 +10,17 @@ import Events from './pages/Events';
 import About from './pages/About';
 import Dashboard from './pages/Dashboard';
 import Overview from './pages/dashboard/Overview';
+import { TestAuthPage } from './pages/Auth/TestAuthPage';
+import EventCreatePage from './pages/Events/EventCreatePage';
+import AllEvents from './pages/dashboard/AllEvents';
 
 function App() {
   return (
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Public routes */}
-          <Route
-            path="/"
-            element={
-              <>
-                <Navbar />
-                <div className="flex-grow pt-24">
-                  <Suspense fallback={<LoadingScreen />}>
-                    <Routes>
-                      <Route index element={<Home />} />
-                      <Route path="/events" element={<Events />} />
-                      <Route path="/about" element={<About />} />
-                    </Routes>
-                  </Suspense>
-                </div>
-                <Footer />
-              </>
-            }
-          />
+          {/* Auth test route */}
+          <Route path="/test-auth" element={<TestAuthPage />} />
 
           {/* Protected dashboard routes */}
           <Route
@@ -46,10 +32,38 @@ function App() {
             }
           >
             <Route index element={<Overview />} />
-            <Route path="events" element={<div>Events Management</div>} />
+            <Route path="events" element={<AllEvents />} />
+            <Route 
+              path="events/create" 
+              element={
+                <ProtectedRoute>
+                  <EventCreatePage />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="participants" element={<div>Participants Management</div>} />
             <Route path="settings" element={<div>Settings</div>} />
           </Route>
+
+          {/* Public routes with layout */}
+          <Route
+            path="/"
+            element={
+              <>
+                <Navbar />
+                <div className="flex-grow pt-24">
+                  <Suspense fallback={<LoadingScreen />}>
+                    <Routes>
+                      <Route index element={<Home />} />
+                      <Route path="events" element={<Events />} />
+                      <Route path="about" element={<About />} />
+                    </Routes>
+                  </Suspense>
+                </div>
+                <Footer />
+              </>
+            }
+          />
 
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" replace />} />

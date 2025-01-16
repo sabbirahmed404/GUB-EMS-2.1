@@ -11,11 +11,18 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.8",
+    "@tanstack/react-query": "^5.64.1",
+    "daisyui": "^4.12.23",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-hook-form": "^7.54.2",
     "react-icons": "^5.0.1",
-    "react-router-dom": "^6.22.3"
+    "react-router-dom": "^6.22.3",
+    "react-super-responsive-table": "^6.0.1",
+    "react-table": "^7.8.0",
+    "react-window": "^1.8.11",
+    "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",

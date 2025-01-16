@@ -1,27 +1,22 @@
-import { Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
-import Sidebar from '../components/dashboard/Sidebar';
-import TopBar from '../components/dashboard/TopBar';
-import LoadingScreen from '../components/LoadingScreen';
+import { Sidebar } from '../components/Sidebar';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Dashboard() {
-  const { loading } = useAuth();
+  const { user, profile } = useAuth();
 
-  if (loading) {
-    return <LoadingScreen />;
+  if (!user || !profile) {
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-100">
       <Sidebar />
-      <TopBar />
-      
-      <main className="ml-20 pt-20 p-6">
-        <Suspense fallback={<LoadingScreen />}>
+      <div className="flex-1 flex flex-col overflow-hidden ml-64">
+        <main className="flex-1 overflow-y-auto">
           <Outlet />
-        </Suspense>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
