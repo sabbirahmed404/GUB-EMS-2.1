@@ -1,10 +1,10 @@
-import { DashboardLayout } from '../../components/layouts/DashboardLayout';
-import EventDashboard from '../../pages/Events/EventDashboard';
+import AllEventTable from '../../components/events/AllEventTable';
 
 export default function AllEvents() {
   return (
-    <DashboardLayout>
-      <EventDashboard />
-    </DashboardLayout>
+    <div className="p-6">
+      <h1 className="text-2xl font-semibold mb-6">All Events</h1>
+      <AllEventTable />
+    </div>
   );
 } 

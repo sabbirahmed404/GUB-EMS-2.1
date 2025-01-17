@@ -1,5 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { Suspense, useEffect } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
@@ -13,6 +13,26 @@ import Overview from './pages/dashboard/Overview';
 import { TestAuthPage } from './pages/Auth/TestAuthPage';
 import EventCreatePage from './pages/Events/EventCreatePage';
 import AllEvents from './pages/dashboard/AllEvents';
+import EventUpdatePage from './pages/Events/EventUpdatePage';
+
+function PublicLayout() {
+  useEffect(() => {
+    console.log('PublicLayout mounted');
+    return () => console.log('PublicLayout unmounted');
+  }, []);
+
+  return (
+    <div className="min-h-screen flex flex-col bg-white">
+      <Navbar />
+      <main className="flex-grow pt-24">
+        <Suspense fallback={<LoadingScreen />}>
+          <Outlet />
+        </Suspense>
+      </main>
+      <Footer />
+    </div>
+  );
+}
 
 function App() {
   return (
@@ -43,27 +63,15 @@ function App() {
             />
             <Route path="participants" element={<div>Participants Management</div>} />
             <Route path="settings" element={<div>Settings</div>} />
+            <Route path="events/edit/:eid" element={<EventUpdatePage />} />
           </Route>
 
           {/* Public routes with layout */}
-          <Route
-            path="/"
-            element={
-              <>
-                <Navbar />
-                <div className="flex-grow pt-24">
-                  <Suspense fallback={<LoadingScreen />}>
-                    <Routes>
-                      <Route index element={<Home />} />
-                      <Route path="events" element={<Events />} />
-                      <Route path="about" element={<About />} />
-                    </Routes>
-                  </Suspense>
-                </div>
-                <Footer />
-              </>
-            }
-          />
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/events" element={<Events />} />
+            <Route path="/about" element={<About />} />
+          </Route>
 
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" replace />} />

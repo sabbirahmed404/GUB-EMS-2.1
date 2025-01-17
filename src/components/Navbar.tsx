@@ -1,11 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Menu, X } from 'lucide-react';
 import SignupModal from './SignupModal';
 
+interface SignUpButtonProps {
+  onClick: () => void;
+  className?: string;
+}
+
 export default function Navbar() {
+  console.log('Navbar rendering');
   const [isOpen, setIsOpen] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
+
+  useEffect(() => {
+    console.log('Navbar mounted');
+    return () => console.log('Navbar unmounted');
+  }, []);
 
   return (
     <>
@@ -83,11 +94,11 @@ export default function Navbar() {
   );
 }
 
-function SignUpButton({ onClick, className = '' }) {
+function SignUpButton({ onClick, className = '' }: SignUpButtonProps) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center px-6 py-2 bg-[#788bff] hover:bg-white/10 text-white rounded-full transition-colors duration-300 ${className}`}
+      className={`flex items-center px-6 py-2 bg-primary hover:bg-primary/80 text-white rounded-full transition-colors duration-300 ${className}`}
     >
       <span>Sign Up</span>
       <ArrowRight className="ml-2 h-4 w-4" />

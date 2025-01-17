@@ -51,22 +51,29 @@ export const EventTable = ({ filter, searchQuery }: EventTableProps) => {
           .from('events')
           .select('*');
 
-        if (filter) {
-          query = query.eq('status', filter);
-        }
-
         if (searchQuery) {
           query = query.or(`event_name.ilike.%${searchQuery}%,organizer_name.ilike.%${searchQuery}%`);
         }
 
-        query = query.order(sortField, { ascending: sortDirection === 'asc' });
+        query = query.order('start_date', { ascending: sortDirection === 'asc' });
 
         const { data, error: fetchError } = await query;
 
         if (fetchError) throw fetchError;
 
         if (mounted && data) {
-          setEvents(data);
+          // Calculate status for each event
+          const eventsWithStatus = data.map(event => ({
+            ...event,
+            status: calculateEventStatus(event.start_date, event.end_date)
+          }));
+
+          // Apply status filter in memory if needed
+          const filteredEvents = filter
+            ? eventsWithStatus.filter(event => event.status === filter)
+            : eventsWithStatus;
+
+          setEvents(filteredEvents);
         }
       } catch (err) {
         console.error('Error fetching events:', err);
@@ -98,6 +105,16 @@ export const EventTable = ({ filter, searchQuery }: EventTableProps) => {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  const calculateEventStatus = (startDate: string, endDate: string) => {
+    const now = new Date();
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (now < start) return 'upcoming';
+    if (now > end) return 'ended';
+    return 'ongoing';
   };
 
   if (authLoading) {

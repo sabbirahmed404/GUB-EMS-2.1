@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { events } from '../data/events';
@@ -8,8 +9,13 @@ import '../styles/animations.css';
 export default function Home() {
   const featuredEvents = events.slice(0, 3);
 
+  useEffect(() => {
+    console.log('Home page mounted');
+    return () => console.log('Home page unmounted');
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-50 -mt-24">
+    <div className="bg-gray-50 -mt-24 flex-grow">
       <div className="hero-container">
         <div className="animated-pattern" />
         <div className="pt-20 relative z-10">

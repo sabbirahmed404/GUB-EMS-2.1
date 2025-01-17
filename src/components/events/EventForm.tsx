@@ -1,7 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { useNavigate } from 'react-router-dom';
+
+interface EventFormProps {
+  mode?: 'create' | 'update';
+  initialData?: any;
+}
 
 interface EventFormData {
   event_name: string;
@@ -30,19 +36,40 @@ interface EventFormData {
   }[];
 }
 
-export const EventForm = () => {
-  console.log('EventForm component mounted');
-  const { register, handleSubmit, formState: { errors } } = useForm<EventFormData>();
+export const EventForm = ({ mode = 'create', initialData }: EventFormProps) => {
+  const navigate = useNavigate();
+  const { register, handleSubmit, formState: { errors }, reset } = useForm<EventFormData>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user, profile } = useAuth();
-  
-  console.log('Auth state:', { user, profile });
   
   const [guests, setGuests] = useState<string[]>([]);
   const [newGuest, setNewGuest] = useState('');
   const [sponsors, setSponsors] = useState<{ tier: string; name: string; }[]>([]);
   const [newSponsor, setNewSponsor] = useState({ tier: '', name: '' });
+
+  // Initialize form with existing data if in update mode
+  useEffect(() => {
+    if (mode === 'update' && initialData) {
+      reset({
+        event_name: initialData.event_name,
+        organizer_name: initialData.organizer_name,
+        organizer_code: initialData.organizer_code,
+        phone: initialData.contact_phone === 'pending' ? '' : initialData.contact_phone,
+        email: initialData.contact_email === 'pending' ? '' : initialData.contact_email,
+        venue: initialData.venue,
+        start_date: initialData.start_date.split('T')[0],
+        end_date: initialData.end_date.split('T')[0],
+        start_time: initialData.start_time,
+        end_time: initialData.end_time,
+        description: initialData.description || '',
+        social_media_links: initialData.details?.social_media_links || {},
+        session_chair: initialData.details?.session_chair || ''
+      });
+      setGuests(initialData.details?.chief_guests || []);
+      setSponsors(initialData.details?.sponsors || []);
+    }
+  }, [mode, initialData, reset]);
 
   const generateEID = () => {
     const timestamp = Date.now().toString(36);
@@ -65,16 +92,17 @@ export const EventForm = () => {
   };
 
   const onSubmit = async (data: EventFormData) => {
-    console.log('Form submitted with data:', data);
     try {
+      console.log('Starting form submission:', { mode, data });
       setLoading(true);
       setError(null);
 
       if (!user || !profile) {
-        throw new Error('You must be logged in to create an event');
+        throw new Error('You must be logged in to manage events');
       }
 
-      // First, get the user_id from the users table
+      // Get user_id from the users table
+      console.log('Fetching user data for:', user.id);
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('user_id')
@@ -82,16 +110,16 @@ export const EventForm = () => {
         .single();
 
       if (userError || !userData) {
-        console.error('Error getting user_id:', userError);
+        console.error('Failed to get user data:', userError);
         throw new Error('Failed to get user information');
       }
+      console.log('User data fetched:', userData);
 
-      // Generate event ID
-      const eid = generateEID();
-      let banner_url = null;
+      let banner_url = initialData?.banner_url || null;
 
       // Handle image upload if provided
       if (data.banner_image?.[0]) {
+        console.log('Starting banner image upload');
         const file = data.banner_image[0];
         if (file.size > 10 * 1024 * 1024) {
           throw new Error('Image size must be less than 10MB');
@@ -106,49 +134,102 @@ export const EventForm = () => {
           .upload(filePath, file);
 
         if (uploadError) {
-          console.error('Upload error:', uploadError);
+          console.error('Banner upload error:', uploadError);
           throw new Error('Failed to upload banner image');
         }
         
         banner_url = uploadData.path;
+        console.log('Banner uploaded successfully:', banner_url);
       }
 
-      // Create event
-      const eventData = {
-        eid,
-        event_name: data.event_name,
-        organizer_name: data.organizer_name,
-        organizer_code: data.organizer_code,
-        created_by: userData.user_id,
-        team_id: null,
-        start_date: data.start_date,
-        end_date: data.end_date,
-        start_time: data.start_time,
-        end_time: data.end_time,
-        venue: data.venue,
-        description: data.description || null,
-        banner_url,
-        status: 'upcoming'
-      };
+      let eventId;
 
-      console.log('Creating event with data:', eventData);
+      if (mode === 'create') {
+        // Create new event
+        const eid = generateEID();
+        console.log('Generated EID:', eid);
+        
+        // Debug logs
+        console.log('User auth ID:', user.id);
+        console.log('User profile:', profile);
 
-      const { data: createdEvent, error: eventError } = await supabase
-        .from('events')
-        .insert([eventData])
-        .select()
-        .single();
+        const eventData = {
+          eid,
+          event_name: data.event_name,
+          organizer_name: data.organizer_name,
+          organizer_code: data.organizer_code,
+          created_by: userData.user_id,
+          team_id: null,
+          start_date: data.start_date,
+          end_date: data.end_date,
+          start_time: data.start_time,
+          end_time: data.end_time,
+          venue: data.venue,
+          description: data.description || null,
+          banner_url,
+          contact_phone: data.phone || 'pending',
+          contact_email: data.email || 'pending'
+        };
 
-      if (eventError) {
-        console.error('Event creation error:', eventError);
-        throw new Error(`Failed to create event: ${eventError.message}`);
+        console.log('Event data being sent:', eventData);
+
+        // Create the event
+        const { data: createdEvent, error: eventError } = await supabase
+          .from('events')
+          .insert(eventData)
+          .select('event_id')
+          .single();
+
+        if (eventError) {
+          console.error('Event creation error:', eventError);
+          throw new Error(`Failed to create event: ${eventError.message}`);
+        }
+        console.log('Event created successfully:', createdEvent);
+        eventId = createdEvent.event_id;
+      } else {
+        // Update existing event
+        console.log('Updating event:', initialData.event_id);
+        
+        // Debug logs
+        console.log('User auth ID:', user.id);
+        console.log('User profile:', profile);
+        
+        const updateData = {
+          event_name: data.event_name,
+          organizer_name: data.organizer_name,
+          organizer_code: data.organizer_code,
+          start_date: data.start_date,
+          end_date: data.end_date,
+          start_time: data.start_time,
+          end_time: data.end_time,
+          venue: data.venue,
+          description: data.description || null,
+          banner_url,
+          contact_phone: data.phone || 'pending',
+          contact_email: data.email || 'pending',
+          updated_at: new Date().toISOString()
+        };
+
+        console.log('Event data being sent:', updateData);
+        console.log('Event ID being updated:', initialData.event_id);
+
+        const { error: eventError } = await supabase
+          .from('events')
+          .update(updateData)
+          .eq('event_id', initialData.event_id)
+          .eq('created_by', userData.user_id);
+
+        if (eventError) {
+          console.error('Event update error:', eventError);
+          throw new Error(`Failed to update event: ${eventError.message}`);
+        }
+        console.log('Event updated successfully');
+        eventId = initialData.event_id;
       }
 
-      console.log('Event created:', createdEvent);
-
-      // Create event details
+      // Update event details
       const eventDetails = {
-        event_id: createdEvent.event_id,
+        event_id: eventId,
         social_media_links: data.social_media_links || null,
         chief_guests: guests,
         special_guests: [],
@@ -157,22 +238,39 @@ export const EventForm = () => {
         sponsors: sponsors.length > 0 ? sponsors : null
       };
 
-      console.log('Creating event details:', eventDetails);
+      console.log('Preparing event details:', eventDetails);
 
-      const { error: detailsError } = await supabase
-        .from('event_details')
-        .insert([eventDetails]);
+      if (mode === 'create') {
+        const { error: detailsError } = await supabase
+          .from('event_details')
+          .insert([eventDetails]);
 
-      if (detailsError) {
-        console.error('Event details error:', detailsError);
-        // Rollback event creation
-        await supabase.from('events').delete().eq('event_id', createdEvent.event_id);
-        throw new Error(`Failed to create event details: ${detailsError.message}`);
+        if (detailsError) {
+          console.error('Event details creation error:', detailsError);
+          // Rollback event creation
+          await supabase.from('events').delete().eq('event_id', eventId);
+          throw new Error(`Failed to create event details: ${detailsError.message}`);
+        }
+        console.log('Event details created successfully');
+      } else {
+        const { error: detailsError } = await supabase
+          .from('event_details')
+          .update(eventDetails)
+          .eq('event_id', eventId);
+
+        if (detailsError) {
+          console.error('Event details update error:', detailsError);
+          throw new Error(`Failed to update event details: ${detailsError.message}`);
+        }
+        console.log('Event details updated successfully');
       }
 
+      console.log('Event operation completed successfully');
+      // Navigate back to dashboard on success
+      navigate('/dashboard');
     } catch (err) {
-      console.error('Error creating event:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create event');
+      console.error('Error managing event:', err);
+      setError(err instanceof Error ? err.message : 'Failed to manage event');
     } finally {
       setLoading(false);
     }
@@ -181,8 +279,6 @@ export const EventForm = () => {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-4xl mx-auto">
       <div className="bg-white shadow-sm rounded-lg p-6">
-        <h2 className="text-xl font-semibold mb-6">Create New Event</h2>
-        
         {error && (
           <div className="mb-4 p-3 text-sm text-red-600 bg-red-100 rounded-md">
             {error}
@@ -467,7 +563,8 @@ export const EventForm = () => {
             disabled={loading}
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            {loading ? 'Creating Event...' : 'Create Event'}
+            {loading ? (mode === 'create' ? 'Creating Event...' : 'Updating Event...') : 
+                      (mode === 'create' ? 'Create Event' : 'Update Event')}
           </button>
         </div>
       </div>
