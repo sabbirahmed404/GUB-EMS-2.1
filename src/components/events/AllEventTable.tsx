@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { Table, Thead, Tbody, Tr, Th, Td } from 'react-super-responsive-table';
 import 'react-super-responsive-table/dist/SuperResponsiveTableStyle.css';
-import { useAuth } from '../../contexts/AuthContext';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Search } from 'lucide-react';
+import { useCache } from '../../contexts/CacheContext';
 
 interface Event {
   event_id: string;
@@ -29,15 +29,27 @@ export default function AllEventTable() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortField, setSortField] = useState<SortField>('start_date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const { user } = useAuth();
+  const { getData, setData } = useCache();
 
   useEffect(() => {
-    const fetchEvents = async () => {
+    const fetchAllEvents = async () => {
       try {
+        // Check cache first
+        const cacheKey = 'all_events';
+        const cachedData = getData(cacheKey);
+        
+        if (cachedData) {
+          console.log('Using cached all events data');
+          setEvents(cachedData);
+          setLoading(false);
+          return;
+        }
+
+        console.log('Fetching fresh all events data');
         setLoading(true);
         const { data, error } = await supabase
           .from('events')
-          .select('event_id,eid,event_name,organizer_name,organizer_code,venue,start_date,end_date,created_at')
+          .select('*')
           .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -48,19 +60,19 @@ export default function AllEventTable() {
           status: calculateEventStatus(event.start_date, event.end_date)
         }));
 
+        // Store in cache
+        setData(cacheKey, eventsWithStatus);
         setEvents(eventsWithStatus);
       } catch (error) {
-        console.error('Error fetching events:', error);
+        console.error('Error fetching all events:', error);
         setError('Failed to fetch events');
       } finally {
         setLoading(false);
       }
     };
 
-    if (user) {
-      fetchEvents();
-    }
-  }, [user]);
+    fetchAllEvents();
+  }, [getData, setData]);
 
   // Add helper function for status calculation
   const calculateEventStatus = (startDate: string, endDate: string) => {
@@ -140,7 +152,7 @@ export default function AllEventTable() {
         </select>
       </div>
 
-      <div className="w-full overflow-x-auto bg-white rounded-lg shadow">
+      <div className="w-full overflow-x-auto bg-white rounded-lg shadow [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
         <Table className="min-w-full">
           <Thead>
             <Tr className="bg-gray-50">

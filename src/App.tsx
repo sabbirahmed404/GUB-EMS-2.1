@@ -14,6 +14,9 @@ import { TestAuthPage } from './pages/Auth/TestAuthPage';
 import EventCreatePage from './pages/Events/EventCreatePage';
 import AllEvents from './pages/dashboard/AllEvents';
 import EventUpdatePage from './pages/Events/EventUpdatePage';
+import RegistrationDashboard from './pages/Participants/RegistrationDashboard';
+import ParticipantsList from './pages/Participants/ParticipantsList'; 
+import { CacheProvider } from './contexts/CacheContext';
 
 function PublicLayout() {
   useEffect(() => {
@@ -37,46 +40,49 @@ function PublicLayout() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          {/* Auth test route */}
-          <Route path="/test-auth" element={<TestAuthPage />} />
+      <CacheProvider>
+        <Router>
+          <Routes>
+            {/* Auth test route */}
+            <Route path="/test-auth" element={<TestAuthPage />} />
 
-          {/* Protected dashboard routes */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Overview />} />
-            <Route path="events" element={<AllEvents />} />
-            <Route 
-              path="events/create" 
+            {/* Protected dashboard routes */}
+            <Route
+              path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <EventCreatePage />
+                  <Dashboard />
                 </ProtectedRoute>
-              } 
-            />
-            <Route path="participants" element={<div>Participants Management</div>} />
-            <Route path="settings" element={<div>Settings</div>} />
-            <Route path="events/edit/:eid" element={<EventUpdatePage />} />
-          </Route>
+              }
+            >
+              <Route index element={<Overview />} />
+              <Route path="events" element={<AllEvents />} />
+              <Route 
+                path="events/create" 
+                element={
+                  <ProtectedRoute>
+                    <EventCreatePage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route path="registrations" element={<RegistrationDashboard />} />
+              <Route path="participants" element={<ParticipantsList />} />
+              <Route path="settings" element={<div>Settings</div>} />
+              <Route path="events/edit/:eid" element={<EventUpdatePage />} />
+            </Route>
 
-          {/* Public routes with layout */}
-          <Route element={<PublicLayout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/events" element={<Events />} />
-            <Route path="/about" element={<About />} />
-          </Route>
+            {/* Public routes with layout */}
+            <Route element={<PublicLayout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/events" element={<Events />} />
+              <Route path="/about" element={<About />} />
+            </Route>
 
-          {/* Catch all route */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
+            {/* Catch all route */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Router>
+      </CacheProvider>
     </AuthProvider>
   );
 }

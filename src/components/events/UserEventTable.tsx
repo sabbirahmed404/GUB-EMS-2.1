@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase';
 import { Table, Thead, Tbody, Tr, Th, Td } from 'react-super-responsive-table';
 import 'react-super-responsive-table/dist/SuperResponsiveTableStyle.css';
 import { useAuth } from '../../contexts/AuthContext';
+import { useCache } from '../../contexts/CacheContext';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { Search, Edit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -31,6 +32,7 @@ export default function UserEventTable() {
   const [sortField, setSortField] = useState<SortField>('start_date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const { user, profile } = useAuth();
+  const { getData, setData } = useCache();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,6 +40,18 @@ export default function UserEventTable() {
       if (!profile?.user_id) return;
       
       try {
+        // Check cache first
+        const cacheKey = `user_events_${profile.user_id}`;
+        const cachedData = getData(cacheKey);
+        
+        if (cachedData) {
+          console.log('Using cached events data');
+          setEvents(cachedData);
+          setLoading(false);
+          return;
+        }
+
+        console.log('Fetching fresh events data');
         setLoading(true);
         const { data, error } = await supabase
           .from('events')
@@ -53,6 +67,8 @@ export default function UserEventTable() {
           status: calculateEventStatus(event.start_date, event.end_date)
         }));
 
+        // Store in cache
+        setData(cacheKey, eventsWithStatus);
         setEvents(eventsWithStatus);
       } catch (error) {
         console.error('Error fetching user events:', error);
@@ -65,7 +81,7 @@ export default function UserEventTable() {
     if (user && profile) {
       fetchUserEvents();
     }
-  }, [user, profile]);
+  }, [user, profile, getData, setData]);
 
   // Add helper function for status calculation
   const calculateEventStatus = (startDate: string, endDate: string) => {
@@ -145,7 +161,7 @@ export default function UserEventTable() {
         </select>
       </div>
 
-      <div className="w-full overflow-x-auto bg-white rounded-lg shadow">
+      <div className="w-full overflow-x-auto bg-white rounded-lg shadow [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
         <Table className="min-w-full">
           <Thead>
             <Tr className="bg-gray-50">

@@ -1,17 +1,14 @@
-import { Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { DashboardLayout } from '../components/layouts/DashboardLayout';
+import DashboardLayout from '../components/layouts/DashboardLayout';
 
 export default function Dashboard() {
-  const { user, profile } = useAuth();
+  const { profile } = useAuth();
 
-  if (!user || !profile) {
+  if (!profile) {
     return null;
   }
 
   return (
-    <DashboardLayout>
-      <Outlet />
-    </DashboardLayout>
+    <DashboardLayout />
   );
 }

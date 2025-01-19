@@ -4,11 +4,17 @@ export const RoleSwitch = () => {
   const { profile, updateUserRole } = useAuth();
 
   const handleRoleChange = async () => {
-    if (!profile) return;
+    if (!profile) {
+      console.error('No profile found for role switch');
+      return;
+    }
     
     try {
+      console.log('Current role:', profile.role);
       const newRole = profile.role === 'organizer' ? 'visitor' : 'organizer';
+      console.log('Switching to role:', newRole);
       await updateUserRole(newRole);
+      console.log('Role switch successful');
     } catch (error) {
       console.error('Error switching role:', error);
     }

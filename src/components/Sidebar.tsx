@@ -27,6 +27,11 @@ export const Sidebar = () => {
       icon: Calendar
     },
     {
+      name: 'Registrations',
+      path: '/dashboard/registrations',
+      icon: UserPlus
+    },
+    {
       name: 'Participants',
       path: '/dashboard/participants',
       icon: Users

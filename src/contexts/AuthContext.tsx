@@ -210,14 +210,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } finally {
         if (mounted) {
-          setLoading(false);
+        setLoading(false);
           console.log('[Auth] Initialization complete');
         }
       }
     };
-
+  
     initializeAuth();
-
+  
     return () => {
       console.log('[Auth] Cleanup');
       mounted = false;
@@ -231,13 +231,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setError(null);
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
+      provider: 'google',
+      options: {
           redirectTo: `${window.location.origin}/dashboard`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
         },
       });
 
@@ -314,17 +314,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('User not authenticated');
       }
 
+      console.log('Updating role:', {
+        userId: profile.user_id,
+        currentRole: profile.role,
+        newRole: newRole
+      });
+
       const { error: updateError } = await supabase
         .from('users')
         .update({ role: newRole })
         .eq('user_id', profile.user_id);
 
       if (updateError) {
+        console.error('Database update error:', updateError);
         throw updateError;
       }
 
+      console.log('Database update successful');
+
       // Update local state
-      setProfile(prev => prev ? { ...prev, role: newRole } : null);
+      setProfile(prev => {
+        const updated = prev ? { ...prev, role: newRole } : null;
+        console.log('Updated profile:', updated);
+        return updated;
+      });
     } catch (error) {
       console.error('Error updating role:', error);
       throw error;

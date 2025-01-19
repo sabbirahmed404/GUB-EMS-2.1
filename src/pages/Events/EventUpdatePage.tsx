@@ -8,7 +8,7 @@ import { EventForm } from '../../components/events/EventForm';
 export default function EventUpdatePage() {
   const { eid } = useParams();
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [event, setEvent] = useState<any>(null);
