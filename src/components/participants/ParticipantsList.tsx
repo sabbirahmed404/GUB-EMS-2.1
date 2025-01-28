@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useCache } from '../../contexts/CacheContext';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 
 interface Participant {
@@ -16,6 +17,7 @@ interface Participant {
   department: string;
   status: string;
   created_at: string;
+  event_id: string;
 }
 
 export default function ParticipantsList() {
@@ -23,29 +25,64 @@ export default function ParticipantsList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { profile } = useAuth();
+  const { getData, setData } = useCache();
 
   useEffect(() => {
     async function fetchParticipants() {
+      if (!profile?.user_id) return;
+
       try {
+        const cacheKey = `participants_${profile.user_id}`;
+        const cachedData = getData(cacheKey);
+        
+        if (cachedData) {
+          console.log('Using cached participants data');
+          setParticipants(cachedData);
+          setLoading(false);
+          return;
+        }
+
+        console.log('Fetching fresh participants data');
         const { data, error } = await supabase
           .from('participants')
-          .select('*')
-          .eq('user_id', profile?.user_id);
+          .select(`
+            participant_id,
+            name,
+            designation,
+            phone,
+            email,
+            address,
+            batch,
+            student_id,
+            gender,
+            department,
+            status,
+            created_at,
+            event_id
+          `)
+          .eq('user_id', profile.user_id);
 
-        if (error) throw error;
-        setParticipants(data || []);
+        if (error) {
+          console.error('Error fetching participants:', error);
+          throw error;
+        }
+        
+        if (data) {
+          console.log('Received participants data:', data.length, 'records');
+          setParticipants(data);
+          // Cache for 5 minutes
+          setData(cacheKey, data, 5 * 60 * 1000);
+        }
       } catch (err) {
-        console.error('Error fetching participants:', err);
+        console.error('Error in fetchParticipants:', err);
         setError('Failed to load participants');
       } finally {
         setLoading(false);
       }
     }
 
-    if (profile?.user_id) {
-      fetchParticipants();
-    }
-  }, [profile?.user_id]);
+    fetchParticipants();
+  }, [profile?.user_id, getData, setData]);
 
   if (loading) return <LoadingSpinner />;
   if (error) return <div className="text-red-500">{error}</div>;

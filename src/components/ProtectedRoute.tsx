@@ -1,27 +1,21 @@
-import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingScreen from './LoadingScreen';
 
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-  redirectTo?: string;
-}
-
-export default function ProtectedRoute({ children, redirectTo = '/test-auth' }: ProtectedRouteProps) {
-  const { user, loading } = useAuth();
+export default function ProtectedRoute() {
+  const { user, profile, loading } = useAuth();
   const location = useLocation();
 
-  // Show loading screen while checking auth state
+  // Show loading screen while auth state is being determined
   if (loading) {
     return <LoadingScreen />;
   }
 
-  // Redirect to login if not authenticated
-  if (!user) {
-    return <Navigate to={redirectTo} state={{ from: location.pathname }} replace />;
+  // Only redirect to login if we're sure there's no authenticated user
+  if (!user || !profile) {
+    console.log('No user or profile, redirecting to login. Intended path:', location.pathname);
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
-  // Render children if authenticated
-  return <>{children}</>;
+  return <Outlet />;
 }

@@ -4,7 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import LoadingScreen from './components/LoadingScreen';
+import { LoadingSpinner } from './components/common/LoadingSpinner';
 import Home from './pages/Home';
 import Events from './pages/Events';
 import About from './pages/About';
@@ -17,6 +17,7 @@ import EventUpdatePage from './pages/Events/EventUpdatePage';
 import RegistrationDashboard from './pages/Participants/RegistrationDashboard';
 import ParticipantsList from './pages/Participants/ParticipantsList'; 
 import { CacheProvider } from './contexts/CacheContext';
+import { useAuth } from './contexts/AuthContext';
 
 function PublicLayout() {
   useEffect(() => {
@@ -28,7 +29,7 @@ function PublicLayout() {
     <div className="min-h-screen flex flex-col bg-white">
       <Navbar />
       <main className="flex-grow pt-24">
-        <Suspense fallback={<LoadingScreen />}>
+        <Suspense fallback={<LoadingSpinner />}>
           <Outlet />
         </Suspense>
       </main>
@@ -37,41 +38,43 @@ function PublicLayout() {
   );
 }
 
+// Redirect authenticated users away from auth pages
+function AuthRedirect({ children }: { children: React.ReactNode }) {
+  const { user, profile } = useAuth();
+  const isAuthenticated = user && profile;
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <AuthProvider>
       <CacheProvider>
         <Router>
           <Routes>
-            {/* Auth test route */}
-            <Route path="/test-auth" element={<TestAuthPage />} />
-
-            {/* Protected dashboard routes */}
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Overview />} />
-              <Route path="events" element={<AllEvents />} />
-              <Route 
-                path="events/create" 
-                element={
-                  <ProtectedRoute>
-                    <EventCreatePage />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route path="registrations" element={<RegistrationDashboard />} />
-              <Route path="participants" element={<ParticipantsList />} />
-              <Route path="settings" element={<div>Settings</div>} />
-              <Route path="events/edit/:eid" element={<EventUpdatePage />} />
+            {/* Auth routes */}
+            <Route element={<AuthRedirect><Outlet /></AuthRedirect>}>
+              <Route path="/login" element={<TestAuthPage />} />
+              <Route path="/test-auth" element={<Navigate to="/login" replace />} />
             </Route>
 
-            {/* Public routes with layout */}
+            {/* Protected dashboard routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/dashboard" element={<Dashboard />}>
+                <Route index element={<Overview />} />
+                <Route path="events" element={<AllEvents />} />
+                <Route path="events/create" element={<EventCreatePage />} />
+                <Route path="events/:eid/edit" element={<EventUpdatePage />} />
+                <Route path="participants" element={<ParticipantsList />} />
+                <Route path="registrations" element={<RegistrationDashboard />} />
+              </Route>
+            </Route>
+
+            {/* Public routes */}
             <Route element={<PublicLayout />}>
               <Route path="/" element={<Home />} />
               <Route path="/events" element={<Events />} />

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../contexts/AuthContext';
+import { useCache } from '../../contexts/CacheContext';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
@@ -24,11 +25,12 @@ interface ParticipantFormData {
 const DEPARTMENTS = ['CSE', 'EEE', 'SWE', 'JMC', 'BBA', 'SOC', 'ENG', 'LAW', 'TEX', 'AIDS'];
 
 export const ParticipantForm = ({ eventId, onSuccess }: ParticipantFormProps) => {
-  const navigate = useNavigate();
-  const { register, handleSubmit, formState: { errors } } = useForm<ParticipantFormData>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user, profile } = useAuth();
+  const { invalidateCache } = useCache();
+  const navigate = useNavigate();
+  const { register, handleSubmit, formState: { errors } } = useForm<ParticipantFormData>();
 
   const onSubmit = async (data: ParticipantFormData) => {
     try {
@@ -39,16 +41,34 @@ export const ParticipantForm = ({ eventId, onSuccess }: ParticipantFormProps) =>
         throw new Error('You must be logged in to register for events');
       }
 
+      // First check if the event exists and is open for registration
+      const { data: eventData, error: eventError } = await supabase
+        .from('events')
+        .select('*')
+        .eq('event_id', eventId)
+        .single();
+
+      if (eventError) {
+        throw new Error('Event not found or not accessible');
+      }
+
+      // Check if registration is still open
+      const eventEndDate = new Date(eventData.end_date);
+      if (eventEndDate < new Date()) {
+        throw new Error('Event registration has closed');
+      }
+
       // Check if user has already registered for this event
       const { data: existingRegistration, error: checkError } = await supabase
         .from('participants')
         .select('participant_id')
         .eq('event_id', eventId)
         .eq('user_id', profile.user_id)
-        .single();
+        .maybeSingle();
 
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw checkError;
+      if (checkError) {
+        console.error('Error checking existing registration:', checkError);
+        throw new Error('Failed to check registration status');
       }
 
       if (existingRegistration) {
@@ -56,28 +76,33 @@ export const ParticipantForm = ({ eventId, onSuccess }: ParticipantFormProps) =>
       }
 
       // Create new participant registration
-      const { error: registrationError } = await supabase
+      const { data: newRegistration, error: registrationError } = await supabase
         .from('participants')
-        .insert([
-          {
-            event_id: eventId,
-            user_id: profile.user_id,
-            name: data.name,
-            designation: data.designation,
-            phone: data.phone,
-            email: data.email,
-            address: data.address,
-            batch: data.batch || null,
-            student_id: data.student_id || null,
-            gender: data.gender.toLowerCase(),
-            department: data.department,
-            status: 'registered'
-          }
-        ]);
+        .insert({
+          event_id: eventId,
+          user_id: profile.user_id,
+          name: data.name,
+          designation: data.designation,
+          phone: data.phone,
+          email: data.email,
+          address: data.address,
+          batch: data.batch || null,
+          student_id: data.student_id || null,
+          gender: data.gender.toLowerCase(),
+          department: data.department,
+          status: 'registered'
+        })
+        .select()
+        .single();
 
       if (registrationError) {
-        throw registrationError;
+        console.error('Registration error:', registrationError);
+        throw new Error('Failed to complete registration');
       }
+
+      // Clear any cached participant data
+      const cacheKey = `participants_${profile.user_id}`;
+      invalidateCache(cacheKey);
 
       onSuccess?.();
       navigate('/dashboard/participants');

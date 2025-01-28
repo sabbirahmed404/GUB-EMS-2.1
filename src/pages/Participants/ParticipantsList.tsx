@@ -3,6 +3,8 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { useCache } from '../../contexts/CacheContext';
+import { PlusCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface Event {
   event_id: string;
@@ -32,6 +34,7 @@ export default function ParticipantsList() {
   const [error, setError] = useState<string | null>(null);
   const { profile } = useAuth();
   const { getData, setData } = useCache();
+  const navigate = useNavigate();
 
   // Fetch events created by the user
   useEffect(() => {
@@ -48,6 +51,7 @@ export default function ParticipantsList() {
           if (cachedData.length > 0 && !selectedEvent) {
             setSelectedEvent(cachedData[0].event_id);
           }
+          setLoading(false);
           return;
         }
 
@@ -67,9 +71,11 @@ export default function ParticipantsList() {
             setSelectedEvent(data[0].event_id);
           }
         }
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching organizer events:', error);
         setError('Failed to fetch events');
+        setLoading(false);
       }
     };
 
@@ -79,13 +85,16 @@ export default function ParticipantsList() {
   // Fetch participants for selected event
   useEffect(() => {
     const fetchParticipants = async () => {
-      if (!selectedEvent) return;
-      
+      if (!selectedEvent) {
+        setParticipants([]);
+        return;
+      }
+
+      setLoading(true);
       try {
-        setLoading(true);
         const cacheKey = `event_participants_${selectedEvent}`;
         const cachedData = getData(cacheKey);
-        
+
         if (cachedData) {
           console.log('Using cached participants data');
           setParticipants(cachedData);
@@ -96,19 +105,8 @@ export default function ParticipantsList() {
         console.log('Fetching fresh participants data');
         const { data, error } = await supabase
           .from('participants')
-          .select(`
-            participant_id,
-            name,
-            designation,
-            phone,
-            email,
-            student_id,
-            status,
-            created_at,
-            event_id
-          `)
-          .eq('event_id', selectedEvent)
-          .order('created_at', { ascending: false });
+          .select('*')
+          .eq('event_id', selectedEvent);
 
         if (error) throw error;
 
@@ -143,6 +141,25 @@ export default function ParticipantsList() {
     return (
       <div className="p-4 text-red-600 bg-red-50 rounded-md">
         Error: {error}
+      </div>
+    );
+  }
+
+  // Handle no events case
+  if (events.length === 0) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto">
+        <h1 className="text-2xl font-semibold mb-6">Event Participants</h1>
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <p className="text-gray-500 mb-4">You haven't created any events yet.</p>
+          <button
+            onClick={() => navigate('/dashboard/events/create')}
+            className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+          >
+            <PlusCircle className="h-5 w-5 mr-2" />
+            Create Your First Event
+          </button>
+        </div>
       </div>
     );
   }
@@ -189,17 +206,18 @@ export default function ParticipantsList() {
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="">All Designations</option>
-              <option value="Student">Student</option>
-              <option value="Faculty">Faculty</option>
-              <option value="Staff">Staff</option>
+              <option value="student">Student</option>
+              <option value="faculty">Faculty</option>
+              <option value="staff">Staff</option>
+              <option value="guest">Guest</option>
             </select>
           </div>
         </div>
       </div>
 
-      {/* Participants Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+      {/* Table Section */}
+      <div className="bg-white shadow rounded-lg overflow-hidden">
+        <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -221,10 +239,20 @@ export default function ParticipantsList() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredParticipants.length === 0 ? (
+              {!selectedEvent ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                    No participants found
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                    Please select an event to view its participants
+                  </td>
+                </tr>
+              ) : filteredParticipants.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                    {searchQuery || designationFilter ? (
+                      'No participants match your search criteria'
+                    ) : (
+                      'No participants have registered for this event yet'
+                    )}
                   </td>
                 </tr>
               ) : (

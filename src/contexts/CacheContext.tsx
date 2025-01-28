@@ -4,67 +4,85 @@ interface CacheData {
   [key: string]: {
     data: any;
     timestamp: number;
+    expiresIn?: number; // Optional expiration time in milliseconds
   };
 }
 
 interface CacheContextType {
   getData: (key: string) => any;
-  setData: (key: string, data: any) => void;
+  setData: (key: string, data: any, expiresIn?: number) => void;
   clearCache: () => void;
   invalidateCache: (key: string) => void;
 }
 
 const CacheContext = createContext<CacheContextType | undefined>(undefined);
 
-// Cache expiration time (30 minutes)
-const CACHE_EXPIRATION = 30 * 60 * 1000;
-
-// Memory cache storage
-let memoryCache: CacheData = {};
-const cacheInitTime = Date.now();
+// Default cache expiration time (30 minutes)
+const DEFAULT_CACHE_EXPIRATION = 30 * 60 * 1000;
 
 export function CacheProvider({ children }: { children: React.ReactNode }) {
-  const [cache, setCache] = useState<CacheData>(memoryCache);
+  const [cache, setCache] = useState<CacheData>({});
 
-  // Check for cache expiration every minute
+  // Clean expired cache entries every minute
   useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now();
-      if (now - cacheInitTime > CACHE_EXPIRATION) {
-        window.location.reload();
-      }
-    }, 60000); // Check every minute
+    const cleanupInterval = setInterval(() => {
+      setCache(prevCache => {
+        const now = Date.now();
+        const newCache = { ...prevCache };
+        let hasChanges = false;
 
-    return () => clearInterval(interval);
+        Object.entries(newCache).forEach(([key, entry]) => {
+          const expirationTime = entry.timestamp + (entry.expiresIn || DEFAULT_CACHE_EXPIRATION);
+          if (now >= expirationTime) {
+            delete newCache[key];
+            hasChanges = true;
+          }
+        });
+
+        return hasChanges ? newCache : prevCache;
+      });
+    }, 60000);
+
+    return () => clearInterval(cleanupInterval);
   }, []);
 
   const getData = useCallback((key: string) => {
-    return cache[key]?.data || null;
+    const entry = cache[key];
+    if (!entry) return null;
+
+    const now = Date.now();
+    const expirationTime = entry.timestamp + (entry.expiresIn || DEFAULT_CACHE_EXPIRATION);
+
+    if (now >= expirationTime) {
+      // Remove expired entry
+      setCache(prevCache => {
+        const { [key]: _, ...rest } = prevCache;
+        return rest;
+      });
+      return null;
+    }
+
+    return entry.data;
   }, [cache]);
 
-  const setData = useCallback((key: string, data: any) => {
-    setCache(prevCache => {
-      const newCache = {
-        ...prevCache,
-        [key]: {
-          data,
-          timestamp: Date.now()
-        }
-      };
-      memoryCache = newCache; // Update memory cache
-      return newCache;
-    });
+  const setData = useCallback((key: string, data: any, expiresIn?: number) => {
+    setCache(prevCache => ({
+      ...prevCache,
+      [key]: {
+        data,
+        timestamp: Date.now(),
+        expiresIn
+      }
+    }));
   }, []);
 
   const clearCache = useCallback(() => {
     setCache({});
-    memoryCache = {};
   }, []);
 
   const invalidateCache = useCallback((key: string) => {
     setCache(prevCache => {
       const { [key]: _, ...rest } = prevCache;
-      memoryCache = rest; // Update memory cache
       return rest;
     });
   }, []);

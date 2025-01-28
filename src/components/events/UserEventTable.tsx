@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { Table, Thead, Tbody, Tr, Th, Td } from 'react-super-responsive-table';
 import 'react-super-responsive-table/dist/SuperResponsiveTableStyle.css';
-import { useAuth } from '../../contexts/AuthContext';
-import { useCache } from '../../contexts/CacheContext';
-import { LoadingSpinner } from '../../components/common/LoadingSpinner';
-import { Search, Edit } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCache } from '@/contexts/CacheContext';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { Search, Edit, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface Event {
@@ -23,6 +23,101 @@ interface Event {
 type SortField = 'event_name' | 'start_date' | 'status';
 type SortOrder = 'asc' | 'desc';
 
+// Update the responsive styles for better card layout
+const responsiveStyles = `
+  /* Custom responsive table styles */
+  @media screen and (max-width: 40em) {
+    .responsiveTable {
+      background: transparent !important;
+      border: none !important;
+    }
+
+    .responsiveTable tbody tr {
+      margin-bottom: 1rem;
+      display: block;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .responsiveTable td {
+      padding: 0.75rem 1rem !important;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .responsiveTable td:last-child {
+      border-bottom: none;
+    }
+
+    .responsiveTable td.pivoted {
+      padding: 0.75rem 1rem !important;
+      position: relative;
+      padding-left: 40% !important;
+      display: flex !important;
+      align-items: center;
+      min-height: 2.5rem;
+    }
+
+    .responsiveTable td .tdBefore {
+      position: absolute;
+      left: 1rem;
+      width: 35%;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: #6b7280;
+      white-space: normal;
+    }
+
+    .responsiveTable td .tdContent {
+      width: 100% !important;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      font-size: 0.875rem;
+    }
+
+    /* Status badge styles */
+    .responsiveTable td .status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 0.75rem;
+    }
+
+    /* Action button styles */
+    .responsiveTable td .action-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background-color: #f3f4f6;
+      border-radius: 0.375rem;
+      color: #374151;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .responsiveTable td .action-button:hover {
+      background-color: #e5e7eb;
+    }
+
+    .responsiveTable td .action-button svg {
+      width: 1rem;
+      height: 1rem;
+    }
+  }
+`;
+
+// Add style tag to head
+const styleSheet = document.createElement("style");
+styleSheet.innerText = responsiveStyles;
+document.head.appendChild(styleSheet);
+
 export default function UserEventTable() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,56 +127,105 @@ export default function UserEventTable() {
   const [sortField, setSortField] = useState<SortField>('start_date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const { user, profile } = useAuth();
-  const { getData, setData } = useCache();
+  const { getData, setData, invalidateCache } = useCache();
   const navigate = useNavigate();
 
+  const fetchUserEvents = async () => {
+    if (!profile?.user_id) return;
+    
+    try {
+      console.log('Fetching user events for:', profile.user_id);
+      setLoading(true);
+
+      // First fetch events created by the user
+      const { data: createdEvents, error: createdError } = await supabase
+        .from('events')
+        .select('event_id,eid,event_name,organizer_name,organizer_code,venue,start_date,end_date,created_at')
+        .eq('created_by', profile.user_id)
+        .order('created_at', { ascending: false });
+
+      if (createdError) throw createdError;
+
+      // Then fetch events where user is a participant
+      const { data: participatingEvents, error: participatingError } = await supabase
+        .from('participants')
+        .select(`
+          event:events (
+            event_id,
+            eid,
+            event_name,
+            organizer_name,
+            organizer_code,
+            venue,
+            start_date,
+            end_date,
+            created_at
+          )
+        `)
+        .eq('user_id', profile.user_id)
+        .returns<{ event: Event }[]>();
+
+      if (participatingError) throw participatingError;
+
+      // Combine and deduplicate events
+      const allEvents = [
+        ...createdEvents,
+        ...participatingEvents.map(p => p.event).filter((event): event is Event => event !== null)
+      ];
+      const uniqueEvents = Array.from(new Map(allEvents.map(event => [event.event_id, event])).values());
+
+      // Calculate status dynamically
+      const eventsWithStatus = uniqueEvents.map(event => ({
+        ...event,
+        status: calculateEventStatus(event.start_date, event.end_date)
+      }));
+
+      // Store in cache with 5-minute expiration
+      const cacheKey = `user_events_${profile.user_id}`;
+      setData(cacheKey, eventsWithStatus, 5 * 60 * 1000); // 5 minutes
+      setEvents(eventsWithStatus);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching events:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch events');
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchUserEvents = async () => {
-      if (!profile?.user_id) return;
+    if (!profile?.user_id) return;
+
+    const cacheKey = `user_events_${profile.user_id}`;
+    const cachedData = getData(cacheKey);
+
+    if (cachedData) {
+      console.log('Using cached events data');
+      setEvents(cachedData);
+      setLoading(false);
       
-      try {
-        // Check cache first
-        const cacheKey = `user_events_${profile.user_id}`;
-        const cachedData = getData(cacheKey);
-        
-        if (cachedData) {
-          console.log('Using cached events data');
-          setEvents(cachedData);
-          setLoading(false);
-          return;
-        }
+      // Refresh cache in background after 5 minutes
+      const refreshTimeout = setTimeout(() => {
+        console.log('Cache expired, refreshing data');
+        invalidateCache(cacheKey);
+        fetchUserEvents();
+      }, 5 * 60 * 1000);
 
-        console.log('Fetching fresh events data');
-        setLoading(true);
-        const { data, error } = await supabase
-          .from('events')
-          .select('event_id,eid,event_name,organizer_name,organizer_code,venue,start_date,end_date,created_at')
-          .eq('created_by', profile.user_id)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        // Calculate status dynamically
-        const eventsWithStatus = data.map(event => ({
-          ...event,
-          status: calculateEventStatus(event.start_date, event.end_date)
-        }));
-
-        // Store in cache
-        setData(cacheKey, eventsWithStatus);
-        setEvents(eventsWithStatus);
-      } catch (error) {
-        console.error('Error fetching user events:', error);
-        setError('Failed to fetch events');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (user && profile) {
+      return () => clearTimeout(refreshTimeout);
+    } else {
+      console.log('No cached data, fetching fresh data');
       fetchUserEvents();
     }
-  }, [user, profile, getData, setData]);
+  }, [profile?.user_id]);
+
+  // Add refresh button handler
+  const handleRefresh = () => {
+    if (!profile?.user_id) return;
+    console.log('Manually refreshing events data');
+    invalidateCache(`user_events_${profile.user_id}`);
+    fetchUserEvents();
+  };
 
   // Add helper function for status calculation
   const calculateEventStatus = (startDate: string, endDate: string) => {
@@ -137,9 +281,9 @@ export default function UserEventTable() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="w-full space-y-4 px-2 sm:px-4">
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-lg shadow">
-        <div className="relative flex-1 max-w-md">
+        <div className="relative w-full sm:w-64">
           <input
             type="text"
             placeholder="Search by event name, organizer, or EID..."
@@ -149,79 +293,104 @@ export default function UserEventTable() {
           />
           <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="w-full sm:w-auto px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="all">All Status</option>
-          <option value="upcoming">Upcoming</option>
-          <option value="running">Running</option>
-          <option value="ended">Ended</option>
-        </select>
+        <div className="flex gap-4 w-full sm:w-auto">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="w-full sm:w-auto px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          >
+            <option value="all">All Status</option>
+            <option value="upcoming">Upcoming</option>
+            <option value="running">Running</option>
+            <option value="ended">Ended</option>
+          </select>
+          <button
+            onClick={handleRefresh}
+            className="p-2 hover:bg-gray-100 rounded-full flex-shrink-0"
+            title="Refresh data"
+          >
+            <RefreshCw className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
-      <div className="w-full overflow-x-auto bg-white rounded-lg shadow [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
-        <Table className="min-w-full">
-          <Thead>
-            <Tr className="bg-gray-50">
-              <Th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event ID</Th>
-              <Th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                onClick={() => handleSort('event_name')}
-              >
-                Event Name {sortField === 'event_name' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </Th>
-              <Th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Organizer</Th>
-              <Th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</Th>
-              <Th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Venue</Th>
-              <Th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                onClick={() => handleSort('start_date')}
-              >
-                Date {sortField === 'start_date' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </Th>
-              <Th 
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                onClick={() => handleSort('status')}
-              >
-                Status {sortField === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}
-              </Th>
-              <Th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {filteredEvents.map((event) => (
-              <Tr key={event.event_id} className="hover:bg-gray-50">
-                <Td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{event.eid}</Td>
-                <Td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{event.event_name}</Td>
-                <Td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{event.organizer_name}</Td>
-                <Td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{event.organizer_code}</Td>
-                <Td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{event.venue}</Td>
-                <Td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {new Date(event.start_date).toLocaleDateString()} - {new Date(event.end_date).toLocaleDateString()}
-                </Td>
-                <Td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                    ${event.status === 'upcoming' ? 'bg-green-100 text-green-800' : 
-                      event.status === 'running' ? 'bg-blue-100 text-blue-800' : 
-                      'bg-gray-100 text-gray-800'}`}>
-                    {event.status}
-                  </span>
-                </Td>
-                <Td className="px-6 py-4 whitespace-nowrap">
-                  <button
-                    onClick={() => navigate(`/dashboard/events/edit/${event.eid}`)}
-                    className="flex items-center text-blue-600 hover:text-blue-800"
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
-                  </button>
-                </Td>
+      <div className="bg-white rounded-lg shadow">
+        <div className="overflow-hidden">
+          <Table className="w-full divide-y divide-gray-200">
+            <Thead className="bg-gray-50">
+              <Tr>
+                <Th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</Th>
+                <Th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSort('event_name')}
+                >
+                  Name {sortField === 'event_name' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </Th>
+                <Th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Org.</Th>
+                <Th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</Th>
+                <Th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Venue</Th>
+                <Th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSort('start_date')}
+                >
+                  Date {sortField === 'start_date' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </Th>
+                <Th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSort('status')}
+                >
+                  Status {sortField === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}
+                </Th>
+                <Th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</Th>
               </Tr>
-            ))}
-          </Tbody>
-        </Table>
+            </Thead>
+            <Tbody className="bg-white divide-y divide-gray-200">
+              {filteredEvents.map((event) => (
+                <Tr key={event.event_id} className="hover:bg-gray-50">
+                  <Td className="px-4 py-4 text-sm text-gray-500 font-medium">{event.eid.split('-')[1]}</Td>
+                  <Td className="px-4 py-4">
+                    <div className="text-sm font-medium text-gray-900">{event.event_name}</div>
+                  </Td>
+                  <Td className="px-4 py-4">
+                    <div className="text-sm text-gray-900">{event.organizer_name}</div>
+                  </Td>
+                  <Td className="px-4 py-4">
+                    <div className="text-sm font-mono text-gray-900">{event.organizer_code}</div>
+                  </Td>
+                  <Td className="px-4 py-4">
+                    <div className="text-sm text-gray-900">{event.venue}</div>
+                  </Td>
+                  <Td className="px-4 py-4">
+                    <div className="text-sm text-gray-900">
+                      {new Date(event.start_date).toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </div>
+                  </Td>
+                  <Td className="px-4 py-4">
+                    <span className={`status-badge px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                      ${event.status === 'upcoming' ? 'bg-green-100 text-green-800' : 
+                        event.status === 'running' ? 'bg-blue-100 text-blue-800' : 
+                        'bg-gray-100 text-gray-800'}`}>
+                      {event.status}
+                    </span>
+                  </Td>
+                  <Td className="px-4 py-4 text-sm text-gray-500">
+                    <button
+                      onClick={() => navigate(`/dashboard/events/${event.eid}/edit`)}
+                      className="action-button text-blue-600 hover:text-blue-900"
+                    >
+                      <Edit className="h-4 w-4" />
+                      <span className="sm:hidden">Edit Event</span>
+                    </button>
+                  </Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        </div>
       </div>
     </div>
   );

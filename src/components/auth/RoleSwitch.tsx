@@ -1,4 +1,5 @@
 import { useAuth } from '../../contexts/AuthContext';
+import type { Role } from '../../contexts/AuthContext';
 
 export const RoleSwitch = () => {
   const { profile, updateUserRole } = useAuth();
@@ -11,7 +12,7 @@ export const RoleSwitch = () => {
     
     try {
       console.log('Current role:', profile.role);
-      const newRole = profile.role === 'organizer' ? 'visitor' : 'organizer';
+      const newRole: Role = profile.role === 'organizer' ? 'visitor' : 'organizer';
       console.log('Switching to role:', newRole);
       await updateUserRole(newRole);
       console.log('Role switch successful');
@@ -23,12 +24,18 @@ export const RoleSwitch = () => {
   if (!profile) return null;
 
   return (
-    <button
-      onClick={handleRoleChange}
-      className="text-sm text-gray-600 hover:text-gray-900 focus:outline-none"
-    >
-      Current Role: {profile.role}
-      <span className="ml-2 text-blue-600 hover:text-blue-700">(Switch)</span>
-    </button>
+    <div className="flex items-center gap-2">
+      <span className="text-sm font-medium text-gray-700">
+        {profile.full_name}
+      </span>
+      <span className="text-gray-300">|</span>
+      <button
+        onClick={handleRoleChange}
+        className="text-sm text-gray-600 hover:text-gray-900 focus:outline-none"
+      >
+        Current Role: {profile.role}
+        <span className="ml-2 text-blue-600 hover:text-blue-700">(Switch)</span>
+      </button>
+    </div>
   );
 }; 
