@@ -33,27 +33,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [isVisible, setIsVisible] = useState(true);
-
-  useEffect(() => {
-    // Handle visibility changes
-    const handleVisibilityChange = () => {
-      setIsVisible(!document.hidden);
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
+  const [isFetchingProfile, setIsFetchingProfile] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     let profileTimeout: NodeJS.Timeout;
 
     const fetchProfile = async (userId: string) => {
+      if (profile?.auth_id === userId) {
+        return;
+      }
+
       try {
+        if (isFetchingProfile) return;
+        setIsFetchingProfile(true);
         console.log('Fetching profile for user:', userId);
         const { data, error } = await supabase
           .from('users')
@@ -82,13 +75,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setError(err instanceof Error ? err : new Error('Failed to fetch user profile'));
           setLoading(false);
         }
+      } finally {
+        setIsFetchingProfile(false);
       }
     };
 
-    // Get initial session
     const initAuth = async () => {
       try {
-        setLoading(true);
         const { data: { session }, error } = await supabase.auth.getSession();
         console.log('Auth Check:', {
           hasSession: !!session,
@@ -99,7 +92,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (session?.user) {
           setUser(session.user);
-          await fetchProfile(session.user.id);
+          if (!profile || profile.auth_id !== session.user.id) {
+            await fetchProfile(session.user.id);
+          } else {
+            setLoading(false);
+          }
         } else {
           setLoading(false);
         }
@@ -114,21 +111,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initAuth();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', { event, userId: session?.user?.id });
       
       if (mounted) {
-        setLoading(true);
         if (session?.user) {
           setUser(session.user);
-          // Clear any existing timeout
-          if (profileTimeout) clearTimeout(profileTimeout);
           
-          // Set a delay before fetching profile to ensure user record is created
-          profileTimeout = setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 1000); // Increased timeout to ensure user record is created
+          if (!profile || profile.auth_id !== session.user.id) {
+            if (profileTimeout) clearTimeout(profileTimeout);
+            
+            profileTimeout = setTimeout(() => {
+              fetchProfile(session.user.id);
+            }, 1000);
+          } else {
+            setLoading(false);
+          }
         } else {
           setUser(null);
           setProfile(null);
@@ -143,13 +141,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       subscription.unsubscribe();
     };
   }, []);
-
-  // Don't update loading state when tab is not visible
-  useEffect(() => {
-    if (!isVisible && user && profile) {
-      setLoading(false);
-    }
-  }, [isVisible, user, profile]);
 
   const signInWithGoogle = async () => {
     try {
@@ -188,7 +179,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
 
-      // Update local profile state
       setProfile(prev => prev ? { ...prev, role } : null);
     } catch (err) {
       console.error('Error updating user role:', err);

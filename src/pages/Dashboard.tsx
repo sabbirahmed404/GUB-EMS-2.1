@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import DashboardLayout from '../components/layouts/DashboardLayout';
 import { useLocation, Outlet } from 'react-router-dom';
@@ -7,6 +7,7 @@ import { LoadingSpinner } from '../components/common/LoadingSpinner';
 export default function Dashboard() {
   const { user, profile, loading } = useAuth();
   const location = useLocation();
+  const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
     console.group('Dashboard Mount');
@@ -20,12 +21,18 @@ export default function Dashboard() {
     console.log('Current Path:', location.pathname);
     console.groupEnd();
 
+    // Set initial load to false after first mount
+    if (initialLoad && user && profile) {
+      setInitialLoad(false);
+    }
+
     return () => {
       console.log('Dashboard unmounting');
     };
-  }, [user, profile, loading, location]);
+  }, [user, profile, loading, location, initialLoad]);
 
-  if (loading) {
+  // Only show loading spinner on initial load or when explicitly loading
+  if ((initialLoad && loading) || (!user && loading)) {
     console.log('Dashboard: Loading state');
     return <LoadingSpinner />;
   }
