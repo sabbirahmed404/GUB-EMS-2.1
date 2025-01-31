@@ -31,63 +31,63 @@ export default function RegistrationDashboard() {
   const { profile } = useAuth();
   const { getData, setData } = useCache();
 
+  const fetchData = async () => {
+    if (!profile?.user_id) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch user's registrations
+      const { data: userRegistrations, error: registrationsError } = await supabase
+        .from('participants')
+        .select(`
+          participant_id,
+          status,
+          created_at,
+          event:events (
+            event_id,
+            event_name,
+            organizer_name,
+            start_date,
+            end_date,
+            venue
+          )
+        `)
+        .eq('user_id', profile.user_id)
+        .returns<Registration[]>();
+
+      if (registrationsError) throw registrationsError;
+
+      // Fetch available events
+      const { data: events, error: eventsError } = await supabase
+        .from('events')
+        .select('*')
+        .gte('end_date', new Date().toISOString().split('T')[0])
+        .returns<Event[]>();
+
+      if (eventsError) throw eventsError;
+
+      // Filter out events user is already registered for
+      const registeredEventIds = userRegistrations?.map(reg => reg.event.event_id) || [];
+      const availableEventsFiltered = events.filter(
+        event => !registeredEventIds.includes(event.event_id)
+      ).map(event => ({
+        ...event,
+        status: calculateEventStatus(event.start_date, event.end_date)
+      }));
+
+      setRegistrations(userRegistrations || []);
+      setAvailableEvents(availableEventsFiltered);
+    } catch (err) {
+      console.error('Error fetching participant data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      if (!profile?.user_id) return;
-
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch user's registrations
-        const { data: userRegistrations, error: registrationsError } = await supabase
-          .from('participants')
-          .select(`
-            participant_id,
-            status,
-            created_at,
-            event:events (
-              event_id,
-              event_name,
-              organizer_name,
-              start_date,
-              end_date,
-              venue
-            )
-          `)
-          .eq('user_id', profile.user_id)
-          .returns<Registration[]>();
-
-        if (registrationsError) throw registrationsError;
-
-        // Fetch available events
-        const { data: events, error: eventsError } = await supabase
-          .from('events')
-          .select('*')
-          .gte('end_date', new Date().toISOString().split('T')[0])
-          .returns<Event[]>();
-
-        if (eventsError) throw eventsError;
-
-        // Filter out events user is already registered for
-        const registeredEventIds = userRegistrations?.map(reg => reg.event.event_id) || [];
-        const availableEventsFiltered = events.filter(
-          event => !registeredEventIds.includes(event.event_id)
-        ).map(event => ({
-          ...event,
-          status: calculateEventStatus(event.start_date, event.end_date)
-        }));
-
-        setRegistrations(userRegistrations || []);
-        setAvailableEvents(availableEventsFiltered);
-      } catch (err) {
-        console.error('Error fetching participant data:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
   }, [profile?.user_id]);
 
@@ -230,7 +230,18 @@ export default function RegistrationDashboard() {
 
       {/* User's Registrations Section */}
       <div>
-        <h2 className="text-xl font-medium mb-4">My Registrations</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-medium">My Registrations</h2>
+          <button
+            onClick={fetchData}
+            className="flex items-center px-3 py-2 bg-white text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh
+          </button>
+        </div>
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">

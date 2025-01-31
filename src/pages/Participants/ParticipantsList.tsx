@@ -36,6 +36,44 @@ export default function ParticipantsList() {
   const { getData, setData } = useCache();
   const navigate = useNavigate();
 
+  const fetchParticipants = async () => {
+    if (!selectedEvent) {
+      setParticipants([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const cacheKey = `event_participants_${selectedEvent}`;
+      const cachedData = getData(cacheKey);
+
+      if (cachedData) {
+        console.log('Using cached participants data');
+        setParticipants(cachedData);
+        setLoading(false);
+        return;
+      }
+
+      console.log('Fetching fresh participants data');
+      const { data, error } = await supabase
+        .from('participants')
+        .select('*')
+        .eq('event_id', selectedEvent);
+
+      if (error) throw error;
+
+      if (data) {
+        setParticipants(data);
+        setData(cacheKey, data);
+      }
+    } catch (error) {
+      console.error('Error fetching participants:', error);
+      setError('Failed to fetch participants');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch events created by the user
   useEffect(() => {
     const fetchUserEvents = async () => {
@@ -84,46 +122,8 @@ export default function ParticipantsList() {
 
   // Fetch participants for selected event
   useEffect(() => {
-    const fetchParticipants = async () => {
-      if (!selectedEvent) {
-        setParticipants([]);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const cacheKey = `event_participants_${selectedEvent}`;
-        const cachedData = getData(cacheKey);
-
-        if (cachedData) {
-          console.log('Using cached participants data');
-          setParticipants(cachedData);
-          setLoading(false);
-          return;
-        }
-
-        console.log('Fetching fresh participants data');
-        const { data, error } = await supabase
-          .from('participants')
-          .select('*')
-          .eq('event_id', selectedEvent);
-
-        if (error) throw error;
-
-        if (data) {
-          setParticipants(data);
-          setData(cacheKey, data);
-        }
-      } catch (error) {
-        console.error('Error fetching participants:', error);
-        setError('Failed to fetch participants');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchParticipants();
-  }, [selectedEvent, getData, setData]);
+  }, [selectedEvent]);
 
   const filteredParticipants = participants.filter(participant => {
     const matchesSearch = 
@@ -166,27 +166,42 @@ export default function ParticipantsList() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <h1 className="text-2xl font-semibold mb-6">Event Participants</h1>
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-semibold">Event Participants</h1>
+          <button
+            onClick={() => {
+              if (selectedEvent) {
+                const cacheKey = `event_participants_${selectedEvent}`;
+                setData(cacheKey, null); // Clear cache
+                fetchParticipants(); // Re-fetch data
+              }
+            }}
+            className="flex items-center px-3 py-2 bg-white text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh
+          </button>
+        </div>
 
-      {/* Filters Section */}
-      <div className="mb-6 space-y-4">
+        {/* Event selector */}
+        <select
+          value={selectedEvent}
+          onChange={(e) => setSelectedEvent(e.target.value)}
+          className="block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary mb-4"
+        >
+          <option value="">Select an event</option>
+          {events.map((event) => (
+            <option key={event.event_id} value={event.event_id}>
+              {event.event_name}
+            </option>
+          ))}
+        </select>
+
+        {/* Search and filter controls */}
         <div className="flex flex-wrap gap-4">
-          {/* Event Selection */}
-          <div className="flex-1 min-w-[200px]">
-            <select
-              value={selectedEvent}
-              onChange={(e) => setSelectedEvent(e.target.value)}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            >
-              <option value="">Select Event</option>
-              {events.map((event) => (
-                <option key={event.event_id} value={event.event_id}>
-                  {event.event_name}
-                </option>
-              ))}
-            </select>
-          </div>
-
           {/* Search Input */}
           <div className="flex-1 min-w-[200px]">
             <input

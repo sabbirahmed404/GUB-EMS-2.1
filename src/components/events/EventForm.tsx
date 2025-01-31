@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
+import { Dialog } from '@headlessui/react';
 
 interface EventFormData {
   event_name: string;
@@ -37,6 +38,7 @@ interface EventFormProps {
 export function EventForm({ mode, initialData }: EventFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { register, handleSubmit, formState: { errors } } = useForm<EventFormData>({
@@ -118,7 +120,6 @@ export function EventForm({ mode, initialData }: EventFormProps) {
         }
 
         console.log('Event created successfully:', eventData);
-        navigate('/dashboard/events');
       } else {
         // Handle update logic using a single transaction via RPC
         const { data: eventData, error: eventError } = await supabase.rpc(
@@ -150,8 +151,9 @@ export function EventForm({ mode, initialData }: EventFormProps) {
         }
 
         console.log('Event updated successfully:', eventData);
-        navigate('/dashboard/events');
       }
+
+      setShowSuccessDialog(true);
     } catch (err) {
       console.error('Error in form submission:', err);
       setError(err instanceof Error ? err.message : 'An unexpected error occurred');
@@ -160,268 +162,307 @@ export function EventForm({ mode, initialData }: EventFormProps) {
     }
   };
 
+  const handleDialogClose = () => {
+    setShowSuccessDialog(false);
+    if (mode === 'create') {
+      navigate('/dashboard/events');
+    } else {
+      navigate('/dashboard/overview');
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded relative">
-          {error}
-        </div>
-      )}
+    <>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded relative">
+            {error}
+          </div>
+        )}
 
-      <div className="bg-white shadow rounded-lg p-6 space-y-6">
-        <h2 className="text-xl font-semibold border-b pb-2">Basic Information</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Event Name *</label>
-            <input
-              type="text"
-              {...register('event_name', { required: 'Event name is required' })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
-            {errors.event_name && (
-              <p className="mt-1 text-sm text-red-600">{errors.event_name.message}</p>
-            )}
+        <div className="bg-white shadow rounded-lg p-6 space-y-6">
+          <h2 className="text-xl font-semibold border-b pb-2">Basic Information</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Event Name *</label>
+              <input
+                type="text"
+                {...register('event_name', { required: 'Event name is required' })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+              {errors.event_name && (
+                <p className="mt-1 text-sm text-red-600">{errors.event_name.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Venue *</label>
+              <input
+                type="text"
+                {...register('venue', { required: 'Venue is required' })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+              {errors.venue && (
+                <p className="mt-1 text-sm text-red-600">{errors.venue.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Start Date *</label>
+              <input
+                type="date"
+                {...register('start_date', { required: 'Start date is required' })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+              {errors.start_date && (
+                <p className="mt-1 text-sm text-red-600">{errors.start_date.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">End Date *</label>
+              <input
+                type="date"
+                {...register('end_date', { required: 'End date is required' })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+              {errors.end_date && (
+                <p className="mt-1 text-sm text-red-600">{errors.end_date.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Start Time *</label>
+              <input
+                type="time"
+                {...register('start_time', { required: 'Start time is required' })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+              {errors.start_time && (
+                <p className="mt-1 text-sm text-red-600">{errors.start_time.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">End Time *</label>
+              <input
+                type="time"
+                {...register('end_time', { required: 'End time is required' })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+              {errors.end_time && (
+                <p className="mt-1 text-sm text-red-600">{errors.end_time.message}</p>
+              )}
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Venue *</label>
-            <input
-              type="text"
-              {...register('venue', { required: 'Venue is required' })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
-            {errors.venue && (
-              <p className="mt-1 text-sm text-red-600">{errors.venue.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Start Date *</label>
-            <input
-              type="date"
-              {...register('start_date', { required: 'Start date is required' })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
-            {errors.start_date && (
-              <p className="mt-1 text-sm text-red-600">{errors.start_date.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">End Date *</label>
-            <input
-              type="date"
-              {...register('end_date', { required: 'End date is required' })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
-            {errors.end_date && (
-              <p className="mt-1 text-sm text-red-600">{errors.end_date.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Start Time *</label>
-            <input
-              type="time"
-              {...register('start_time', { required: 'Start time is required' })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
-            {errors.start_time && (
-              <p className="mt-1 text-sm text-red-600">{errors.start_time.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">End Time *</label>
-            <input
-              type="time"
-              {...register('end_time', { required: 'End time is required' })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
-            {errors.end_time && (
-              <p className="mt-1 text-sm text-red-600">{errors.end_time.message}</p>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Description</label>
-          <textarea
-            {...register('description')}
-            rows={4}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-          />
-        </div>
-      </div>
-
-      <div className="bg-white shadow rounded-lg p-6 space-y-6">
-        <h2 className="text-xl font-semibold border-b pb-2">Organizer Information</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Organizer Name *</label>
-            <input
-              type="text"
-              {...register('organizer_name', { required: 'Organizer name is required' })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
-            {errors.organizer_name && (
-              <p className="mt-1 text-sm text-red-600">{errors.organizer_name.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Organizer Code *</label>
-            <input
-              type="text"
-              {...register('organizer_code', { required: 'Organizer code is required' })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
-            {errors.organizer_code && (
-              <p className="mt-1 text-sm text-red-600">{errors.organizer_code.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Contact Email *</label>
-            <input
-              type="email"
-              {...register('contact_email', { required: 'Contact email is required' })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
-            {errors.contact_email && (
-              <p className="mt-1 text-sm text-red-600">{errors.contact_email.message}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Contact Phone *</label>
-            <input
-              type="tel"
-              {...register('contact_phone', { required: 'Contact phone is required' })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
-            {errors.contact_phone && (
-              <p className="mt-1 text-sm text-red-600">{errors.contact_phone.message}</p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white shadow rounded-lg p-6 space-y-6">
-        <h2 className="text-xl font-semibold border-b pb-2">Additional Event Details</h2>
-        
-        <div className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Speakers</label>
-            <input
-              type="text"
-              {...register('speakers')}
-              placeholder="Enter speakers (comma separated)"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Chief Guests</label>
-            <input
-              type="text"
-              {...register('chief_guests')}
-              placeholder="Enter chief guests (comma separated)"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Session Chair</label>
-            <input
-              type="text"
-              {...register('session_chair')}
-              placeholder="Enter session chair name"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Special Guests</label>
-            <input
-              type="text"
-              {...register('special_guests')}
-              placeholder="Enter special guests (comma separated)"
+            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <textarea
+              {...register('description')}
+              rows={4}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
             />
           </div>
         </div>
-      </div>
 
-      <div className="bg-white shadow rounded-lg p-6 space-y-6">
-        <h2 className="text-xl font-semibold border-b pb-2">Social Media Links</h2>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Facebook URL</label>
-            <input
-              type="url"
-              {...register('social_media_links.facebook')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
-          </div>
+        <div className="bg-white shadow rounded-lg p-6 space-y-6">
+          <h2 className="text-xl font-semibold border-b pb-2">Organizer Information</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Organizer Name *</label>
+              <input
+                type="text"
+                {...register('organizer_name', { required: 'Organizer name is required' })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+              {errors.organizer_name && (
+                <p className="mt-1 text-sm text-red-600">{errors.organizer_name.message}</p>
+              )}
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Twitter URL</label>
-            <input
-              type="url"
-              {...register('social_media_links.twitter')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Organizer Code *</label>
+              <input
+                type="text"
+                {...register('organizer_code', { required: 'Organizer code is required' })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+              {errors.organizer_code && (
+                <p className="mt-1 text-sm text-red-600">{errors.organizer_code.message}</p>
+              )}
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Instagram URL</label>
-            <input
-              type="url"
-              {...register('social_media_links.instagram')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Contact Email *</label>
+              <input
+                type="email"
+                {...register('contact_email', { required: 'Contact email is required' })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+              {errors.contact_email && (
+                <p className="mt-1 text-sm text-red-600">{errors.contact_email.message}</p>
+              )}
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">LinkedIn URL</label>
-            <input
-              type="url"
-              {...register('social_media_links.linkedin')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Website URL</label>
-            <input
-              type="url"
-              {...register('social_media_links.website')}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Contact Phone *</label>
+              <input
+                type="tel"
+                {...register('contact_phone', { required: 'Contact phone is required' })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+              {errors.contact_phone && (
+                <p className="mt-1 text-sm text-red-600">{errors.contact_phone.message}</p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="flex justify-end space-x-4">
-        <button
-          type="button"
-          onClick={() => navigate('/dashboard/events')}
-          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-4 py-2 text-sm font-medium text-white bg-primary border border-transparent rounded-md shadow-sm hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
-        >
-          {loading ? 'Saving...' : mode === 'create' ? 'Create Event' : 'Update Event'}
-        </button>
-      </div>
-    </form>
+        <div className="bg-white shadow rounded-lg p-6 space-y-6">
+          <h2 className="text-xl font-semibold border-b pb-2">Additional Event Details</h2>
+          
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Speakers</label>
+              <input
+                type="text"
+                {...register('speakers')}
+                placeholder="Enter speakers (comma separated)"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Chief Guests</label>
+              <input
+                type="text"
+                {...register('chief_guests')}
+                placeholder="Enter chief guests (comma separated)"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Session Chair</label>
+              <input
+                type="text"
+                {...register('session_chair')}
+                placeholder="Enter session chair name"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Special Guests</label>
+              <input
+                type="text"
+                {...register('special_guests')}
+                placeholder="Enter special guests (comma separated)"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white shadow rounded-lg p-6 space-y-6">
+          <h2 className="text-xl font-semibold border-b pb-2">Social Media Links</h2>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Facebook URL</label>
+              <input
+                type="url"
+                {...register('social_media_links.facebook')}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Twitter URL</label>
+              <input
+                type="url"
+                {...register('social_media_links.twitter')}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Instagram URL</label>
+              <input
+                type="url"
+                {...register('social_media_links.instagram')}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">LinkedIn URL</label>
+              <input
+                type="url"
+                {...register('social_media_links.linkedin')}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Website URL</label>
+              <input
+                type="url"
+                {...register('social_media_links.website')}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end space-x-4">
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard/events')}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-4 py-2 text-sm font-medium text-white bg-primary border border-transparent rounded-md shadow-sm hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50"
+          >
+            {loading ? 'Saving...' : mode === 'create' ? 'Create Event' : 'Update Event'}
+          </button>
+        </div>
+      </form>
+
+      {/* Success Dialog */}
+      <Dialog
+        open={showSuccessDialog}
+        onClose={handleDialogClose}
+        className="fixed inset-0 z-50 overflow-y-auto"
+      >
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+
+          <Dialog.Panel className="relative bg-white rounded-lg max-w-md mx-auto p-6">
+            <Dialog.Title className="text-lg font-medium text-primary mb-2">
+              {mode === 'create' ? 'Event Created Successfully!' : 'Event Updated Successfully!'}
+            </Dialog.Title>
+            <Dialog.Description className="text-sm text-gray-500 mb-4">
+              {mode === 'create' 
+                ? 'Your event has been created successfully. You can view it in the events list.'
+                : 'Your event has been updated successfully. The changes are now visible in the overview.'}
+            </Dialog.Description>
+            <button
+              onClick={handleDialogClose}
+              className="w-full px-4 py-2 text-sm font-medium text-white bg-primary rounded-md hover:bg-primary-dark"
+            >
+              {mode === 'create' ? 'Return to All Events' : 'Return to Overview'}
+            </button>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
+    </>
   );
 } 

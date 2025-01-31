@@ -10,10 +10,12 @@
     "preview": "vite preview",
     "fetch-schema": "tsx scripts/schema-manager.ts fetch-schema",
     "fetch-table": "tsx scripts/schema-manager.ts fetch-table",
-    "fetch-docs": "tsx scripts/schema-manager.ts fetch-docs"
+    "fetch-docs": "tsx scripts/schema-manager.ts fetch-docs",
+    "fetch-tms": "tsx scripts/schema-manager.ts fetch-tms"
   },
   "dependencies": {
     "@floating-ui/react": "^0.26.9",
+    "@headlessui/react": "^2.2.0",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-alert-dialog": "^1.1.4",
     "@radix-ui/react-avatar": "^1.1.2",
