@@ -72,6 +72,8 @@ function App() {
                 <Route path="participants" element={<ParticipantsList />} />
                 <Route path="registrations" element={<RegistrationDashboard />} />
               </Route>
+              {/* Handle trailing slash */}
+              <Route path="/dashboard/" element={<Navigate to="/dashboard" replace />} />
             </Route>
 
             {/* Public routes */}
