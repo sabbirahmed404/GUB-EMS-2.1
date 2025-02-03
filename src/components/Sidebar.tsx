@@ -10,6 +10,7 @@ import {
   Menu,
   X
 } from 'lucide-react';
+import Logo from './Logo';
 
 interface SidebarProps {
   mobile?: boolean;
@@ -67,12 +68,8 @@ export const Sidebar = ({ mobile, onClose }: SidebarProps) => {
   return (
     <div className="flex h-full flex-col bg-white border-r border-gray-200">
       <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-        <div className="flex items-center flex-shrink-0 px-4">
-          <img
-            className="h-8 w-auto"
-            src="public/Assets/Primary_logo.svg"
-            alt=""
-          />
+        <div className="flex items-center justify-center flex-shrink-0 px-4">
+          <Logo className="scale-110" />
         </div>
         <nav className="mt-5 flex-1 px-2 space-y-1">
           {navigationItems.map((item) => {

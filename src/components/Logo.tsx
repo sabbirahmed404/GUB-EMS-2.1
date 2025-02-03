@@ -1,13 +1,33 @@
 import { Link } from 'react-router-dom';
 
-export default function Logo({ className = '' }: { className?: string }) {
+interface LogoProps {
+  className?: string;
+  size?: 'sm' | 'md' | 'lg';
+  withLink?: boolean;
+}
+
+export default function Logo({ className = '', size = 'md', withLink = true }: LogoProps) {
+  const sizeClasses = {
+    sm: 'h-8',
+    md: 'h-10',
+    lg: 'h-12'
+  };
+
+  const logoElement = (
+    <img 
+      src="/Assets/Primary_logo.svg" 
+      alt="GUB-EMS Logo" 
+      className={`${sizeClasses[size]} w-auto ${className}`}
+    />
+  );
+
+  if (!withLink) {
+    return logoElement;
+  }
+
   return (
-    <Link to="/" className={`flex items-center space-x-3 ${className}`}>
-      <img 
-        src="/Assets/Primary_logo.svg" 
-        alt="GUB-EMS Logo" 
-        className="h-9 w-auto"
-      />
+    <Link to="/" className="flex items-center space-x-3">
+      {logoElement}
     </Link>
   );
 }
