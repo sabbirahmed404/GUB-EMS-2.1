@@ -18,6 +18,9 @@ import RegistrationDashboard from './pages/Participants/RegistrationDashboard';
 import ParticipantsList from './pages/Participants/ParticipantsList'; 
 import { CacheProvider } from './contexts/CacheContext';
 import { useAuth } from './contexts/AuthContext';
+import TeamsDashboard from './pages/Teams/TeamsDashboard';
+import PlanningDashboard from './pages/Planning/PlanningDashboard';
+import HelpCenter from './pages/Help/HelpCenter';
 
 function PublicLayout() {
   useEffect(() => {
@@ -71,6 +74,9 @@ function App() {
                 <Route path="events/:eid/edit" element={<EventUpdatePage />} />
                 <Route path="participants" element={<ParticipantsList />} />
                 <Route path="registrations" element={<RegistrationDashboard />} />
+                <Route path="team" element={<TeamsDashboard />} />
+                <Route path="planning" element={<PlanningDashboard />} />
+                <Route path="help" element={<HelpCenter />} />
               </Route>
             </Route>
 

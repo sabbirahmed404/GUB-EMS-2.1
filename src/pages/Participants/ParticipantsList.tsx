@@ -233,7 +233,49 @@ export default function ParticipantsList() {
       {/* Table Section */}
       <div className="bg-white shadow rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          {/* Mobile View */}
+          <div className="md:hidden">
+            {filteredParticipants.map((participant) => (
+              <div key={participant.participant_id} className="p-4 border-b last:border-b-0">
+                <div className="space-y-2">
+                  <div>
+                    <span className="font-medium">Name:</span>
+                    <span className="ml-2">{participant.name}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium">Designation:</span>
+                    <span className="ml-2">{participant.designation}</span>
+                  </div>
+                  {participant.student_id && (
+                    <div>
+                      <span className="font-medium">Student ID:</span>
+                      <span className="ml-2">{participant.student_id}</span>
+                    </div>
+                  )}
+                  <div>
+                    <span className="font-medium">Contact:</span>
+                    <div className="ml-2">
+                      <div>{participant.email}</div>
+                      <div>{participant.phone}</div>
+                    </div>
+                  </div>
+                  <div>
+                    <span className="font-medium">Status:</span>
+                    <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
+                      participant.status === 'approved' ? 'bg-green-100 text-green-800' :
+                      participant.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {participant.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop View */}
+          <table className="min-w-full divide-y divide-gray-200 hidden md:table">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -249,51 +291,39 @@ export default function ParticipantsList() {
                   Contact
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Registration Date
+                  Status
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {!selectedEvent ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                    Please select an event to view its participants
+              {filteredParticipants.map((participant) => (
+                <tr key={participant.participant_id}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{participant.name}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">{participant.designation}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">{participant.student_id || '-'}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">
+                      <div>{participant.email}</div>
+                      <div>{participant.phone}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      participant.status === 'approved' ? 'bg-green-100 text-green-800' :
+                      participant.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {participant.status}
+                    </span>
                   </td>
                 </tr>
-              ) : filteredParticipants.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                    {searchQuery || designationFilter ? (
-                      'No participants match your search criteria'
-                    ) : (
-                      'No participants have registered for this event yet'
-                    )}
-                  </td>
-                </tr>
-              ) : (
-                filteredParticipants.map((participant) => (
-                  <tr key={participant.participant_id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{participant.name}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                        {participant.designation}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {participant.student_id || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{participant.email}</div>
-                      <div className="text-sm text-gray-500">{participant.phone}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(participant.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         </div>

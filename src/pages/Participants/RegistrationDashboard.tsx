@@ -243,17 +243,59 @@ export default function RegistrationDashboard() {
           </button>
         </div>
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
+          {/* Mobile View */}
+          <div className="md:hidden">
+            {registrations.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                You haven't registered for any events yet
+              </div>
+            ) : (
+              registrations.map((registration) => (
+                <div key={registration.participant_id} className="p-4 border-b last:border-b-0">
+                  <div className="space-y-2">
+                    <h3 className="font-medium text-lg">{registration.event.event_name}</h3>
+                    <div>
+                      <span className="text-gray-600">Organizer:</span>
+                      <span className="ml-2">{registration.event.organizer_name}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Date:</span>
+                      <span className="ml-2">
+                        {new Date(registration.event.start_date).toLocaleDateString()} - {new Date(registration.event.end_date).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Venue:</span>
+                      <span className="ml-2">{registration.event.venue}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">Status:</span>
+                      <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
+                        registration.status === 'approved' ? 'bg-green-100 text-green-800' :
+                        registration.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {registration.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Desktop View */}
+          <table className="min-w-full divide-y divide-gray-200 hidden md:table">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Event
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Organizer
+                  Date
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
+                  Venue
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
@@ -261,34 +303,41 @@ export default function RegistrationDashboard() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {registrations.map((registration) => (
-                <tr key={registration.participant_id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {registration.event.event_name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {registration.event.organizer_name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {new Date(registration.event.start_date).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      registration.status === 'registered' ? 'bg-green-100 text-green-800' : 
-                      registration.status === 'attended' ? 'bg-blue-100 text-blue-800' : 
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {registration.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-              {registrations.length === 0 && (
+              {registrations.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
-                    No registrations found
+                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                    You haven't registered for any events yet
                   </td>
                 </tr>
+              ) : (
+                registrations.map((registration) => (
+                  <tr key={registration.participant_id}>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-gray-900">
+                        {registration.event.event_name}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {registration.event.organizer_name}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(registration.event.start_date).toLocaleDateString()} - 
+                      {new Date(registration.event.end_date).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {registration.event.venue}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        registration.status === 'approved' ? 'bg-green-100 text-green-800' :
+                        registration.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {registration.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
