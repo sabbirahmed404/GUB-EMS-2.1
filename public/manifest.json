@@ -1,0 +1,20 @@
+{
+  "short_name": "GUB-EMS",
+  "name": "Green University Event Management System",
+  "icons": [
+    {
+      "src": "/Assets/gubems2.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/Assets/Square_icon.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#5465ff",
+  "background_color": "#ffffff"
+} 
