@@ -70,8 +70,8 @@ export const Sidebar = ({ mobile, onClose }: SidebarProps) => {
         <div className="flex items-center flex-shrink-0 px-4">
           <img
             className="h-8 w-auto"
-            src="/logo.svg"
-            alt="Your Company"
+            src="public/Assets/Primary_logo.svg"
+            alt=""
           />
         </div>
         <nav className="mt-5 flex-1 px-2 space-y-1">
