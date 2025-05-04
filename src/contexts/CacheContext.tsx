@@ -1,11 +1,5 @@
 import { createContext, useContext, useCallback, useState, useEffect } from 'react';
 
-export interface CacheState {
-  allEvents?: any[];
-  events?: any[];
-  [key: string]: any;
-}
-
 interface CacheData {
   [key: string]: {
     data: any;
@@ -19,8 +13,6 @@ interface CacheContextType {
   setData: (key: string, data: any, expiresIn?: number) => void;
   clearCache: () => void;
   invalidateCache: (key: string) => void;
-  cache: CacheState;
-  setCache: (newCache: CacheState) => void;
 }
 
 const CacheContext = createContext<CacheContextType | undefined>(undefined);
@@ -29,13 +21,12 @@ const CacheContext = createContext<CacheContextType | undefined>(undefined);
 const DEFAULT_CACHE_EXPIRATION = 30 * 60 * 1000;
 
 export function CacheProvider({ children }: { children: React.ReactNode }) {
-  const [cache, setCacheState] = useState<CacheData>({});
-  const [state, setState] = useState<CacheState>({});
+  const [cache, setCache] = useState<CacheData>({});
 
   // Clean expired cache entries every minute
   useEffect(() => {
     const cleanupInterval = setInterval(() => {
-      setCacheState(prevCache => {
+      setCache(prevCache => {
         const now = Date.now();
         const newCache = { ...prevCache };
         let hasChanges = false;
@@ -64,7 +55,7 @@ export function CacheProvider({ children }: { children: React.ReactNode }) {
 
     if (now >= expirationTime) {
       // Remove expired entry
-      setCacheState(prevCache => {
+      setCache(prevCache => {
         const { [key]: _, ...rest } = prevCache;
         return rest;
       });
@@ -75,7 +66,7 @@ export function CacheProvider({ children }: { children: React.ReactNode }) {
   }, [cache]);
 
   const setData = useCallback((key: string, data: any, expiresIn?: number) => {
-    setCacheState(prevCache => ({
+    setCache(prevCache => ({
       ...prevCache,
       [key]: {
         data,
@@ -86,30 +77,18 @@ export function CacheProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const clearCache = useCallback(() => {
-    setCacheState({});
-    setState({});
+    setCache({});
   }, []);
 
   const invalidateCache = useCallback((key: string) => {
-    setCacheState(prevCache => {
+    setCache(prevCache => {
       const { [key]: _, ...rest } = prevCache;
       return rest;
     });
   }, []);
 
-  const setCache = useCallback((newState: CacheState) => {
-    setState(prev => ({ ...prev, ...newState }));
-  }, []);
-
   return (
-    <CacheContext.Provider value={{ 
-      getData, 
-      setData, 
-      clearCache, 
-      invalidateCache,
-      cache: state,
-      setCache
-    }}>
+    <CacheContext.Provider value={{ getData, setData, clearCache, invalidateCache }}>
       {children}
     </CacheContext.Provider>
   );

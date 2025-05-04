@@ -4,8 +4,9 @@ import 'react-super-responsive-table/dist/SuperResponsiveTableStyle.css';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { EventDetailsDrawer } from './EventDetailsDrawer';
 import { Info } from 'lucide-react';
-import EventDetailsDrawer from './EventDetailsDrawer';
+import { Button } from '../ui/button';
 
 interface Event {
   event_id: string;
@@ -19,103 +20,136 @@ interface Event {
 }
 
 interface EventTableProps {
-  filter?: 'my_events' | 'all_events';
+  filter?: string;
   searchQuery?: string;
 }
 
-export const EventTable = ({ filter = 'all_events', searchQuery = '' }: EventTableProps) => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
+export const EventTable = ({ filter, searchQuery }: EventTableProps) => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sortField, setSortField] = useState<string>('start_date');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-
-  const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  };
+  const [sortField, setSortField] = useState<keyof Event>('start_date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const { user, profile, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    let mounted = true;
+
     const fetchEvents = async () => {
+      if (authLoading) {
+        return;
+      }
+
+      if (!user || !profile) {
+        navigate('/test-auth');
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
 
         let query = supabase
           .from('events')
-          .select('event_id, eid, event_name, organizer_name, start_date, end_date, venue, status')
-          .order(sortField, { ascending: sortDirection === 'asc' });
+          .select('*');
 
-        if (filter === 'my_events' && user) {
-          query = query.eq('created_by', user.id);
+        if (searchQuery) {
+          query = query.or(`event_name.ilike.%${searchQuery}%,organizer_name.ilike.%${searchQuery}%`);
         }
 
-        const { data, error: supabaseError } = await query;
+        query = query.order('start_date', { ascending: sortDirection === 'asc' });
 
-        if (supabaseError) throw supabaseError;
+        const { data, error: fetchError } = await query;
 
-        setEvents(data as Event[]);
+        if (fetchError) throw fetchError;
+
+        if (mounted && data) {
+          // Calculate status for each event
+          const eventsWithStatus = data.map(event => ({
+            ...event,
+            status: calculateEventStatus(event.start_date, event.end_date)
+          }));
+
+          // Apply status filter in memory if needed
+          const filteredEvents = filter
+            ? eventsWithStatus.filter(event => event.status === filter)
+            : eventsWithStatus;
+
+          setEvents(filteredEvents);
+        }
       } catch (err) {
         console.error('Error fetching events:', err);
-        setError('Failed to load events');
+        if (mounted) {
+          setError(err instanceof Error ? err.message : 'Failed to load events');
+        }
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchEvents();
-  }, [user, filter, sortField, sortDirection]);
 
-  const handleSort = (field: string) => {
-    if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
+    return () => {
+      mounted = false;
+    };
+  }, [user, profile, authLoading, filter, searchQuery, sortField, sortDirection, navigate]);
+
+  const handleSort = (field: keyof Event) => {
+    setSortDirection(current => field === sortField ? (current === 'asc' ? 'desc' : 'asc') : 'asc');
+    setSortField(field);
   };
 
-  const filteredEvents = events.filter(event => {
-    const searchLower = searchQuery.toLowerCase();
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const calculateEventStatus = (startDate: string, endDate: string) => {
+    const now = new Date();
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (now < start) return 'upcoming';
+    if (now > end) return 'ended';
+    return 'ongoing';
+  };
+
+  if (authLoading) {
     return (
-      event.event_name.toLowerCase().includes(searchLower) ||
-      event.organizer_name.toLowerCase().includes(searchLower) ||
-      event.venue.toLowerCase().includes(searchLower) ||
-      event.status.toLowerCase().includes(searchLower)
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
     );
-  });
-
-  const openEventDetails = (eventId: string) => {
-    setSelectedEventId(eventId);
-    setIsDrawerOpen(true);
-  };
-
-  const closeDrawer = () => {
-    setIsDrawerOpen(false);
-  };
-
-  if (loading) {
-    return <div className="text-center py-4">Loading events...</div>;
   }
 
   if (error) {
-    return <div className="text-center py-4 text-red-500">{error}</div>;
+    return (
+      <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
+        {error}
+      </div>
+    );
   }
 
-  if (filteredEvents.length === 0) {
-    return <div className="text-center py-4">No events found</div>;
+  if (!loading && events.length === 0) {
+    return (
+      <div className="bg-white shadow rounded-lg p-6 text-center">
+        <p className="text-gray-500">No events found</p>
+      </div>
+    );
   }
 
   return (
-    <div className="overflow-hidden bg-white rounded-lg shadow">
-      <div className="overflow-x-auto">
+    <div className="bg-white shadow-md rounded-lg overflow-hidden">
+      <div className="overflow-x-auto min-w-full">
         <Table className="min-w-full divide-y divide-gray-200">
-          <Thead className="bg-gray-50">
-            <Tr>
+          <Thead>
+            <Tr className="bg-gray-50">
               <Th 
                 onClick={() => handleSort('event_name')}
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
@@ -152,7 +186,7 @@ export const EventTable = ({ filter = 'all_events', searchQuery = '' }: EventTab
             </Tr>
           </Thead>
           <Tbody className="bg-white divide-y divide-gray-200">
-            {filteredEvents.map((event) => (
+            {events.map((event) => (
               <Tr 
                 key={event.event_id}
                 className="hover:bg-gray-50 transition-colors"
@@ -163,43 +197,37 @@ export const EventTable = ({ filter = 'all_events', searchQuery = '' }: EventTab
                 <Td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {event.organizer_name}
                 </Td>
-                <Td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {formatDate(event.start_date)}
+                <Td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {formatDate(event.start_date)} - {formatDate(event.end_date)}
                 </Td>
-                <Td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <Td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {event.venue}
                 </Td>
                 <Td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    event.status === 'upcoming' ? 'bg-green-100 text-green-800' :
-                    event.status === 'ongoing' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {event.status}
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                    ${event.status === 'upcoming' ? 'bg-blue-100 text-blue-800' : 
+                      event.status === 'ongoing' ? 'bg-green-100 text-green-800' : 
+                      'bg-gray-100 text-gray-800'}`}
+                  >
+                    {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
                   </span>
                 </Td>
-                <Td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <button
-                    onClick={() => openEventDetails(event.event_id)}
-                    className="text-blue-600 hover:text-blue-900 mr-4 flex items-center"
-                  >
-                    <Info className="h-4 w-4 mr-1" />
-                    <span>Details</span>
-                  </button>
+                <Td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <EventDetailsDrawer 
+                    eventId={event.event_id} 
+                    trigger={
+                      <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600">
+                        <Info className="h-4 w-4 mr-1" />
+                        Details
+                      </Button>
+                    }
+                  />
                 </Td>
               </Tr>
             ))}
           </Tbody>
         </Table>
       </div>
-      
-      {selectedEventId && (
-        <EventDetailsDrawer
-          eventId={selectedEventId}
-          isOpen={isDrawerOpen}
-          onClose={closeDrawer}
-        />
-      )}
     </div>
   );
 }; 

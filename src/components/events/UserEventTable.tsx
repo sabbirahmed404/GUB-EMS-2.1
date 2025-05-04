@@ -7,7 +7,8 @@ import { useCache } from '@/contexts/CacheContext';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { Search, Edit, RefreshCw, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import EventDetailsDrawer from './EventDetailsDrawer';
+import { EventDetailsDrawer } from './EventDetailsDrawer';
+import { Button } from '../ui/button';
 
 interface Event {
   event_id: string;
@@ -130,8 +131,6 @@ export default function UserEventTable() {
   const { user, profile } = useAuth();
   const { getData, setData, invalidateCache } = useCache();
   const navigate = useNavigate();
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const fetchUserEvents = async () => {
     if (!profile?.user_id) return;
@@ -266,15 +265,6 @@ export default function UserEventTable() {
         : bValue.localeCompare(aValue);
     });
 
-  const openEventDetails = (eventId: string) => {
-    setSelectedEventId(eventId);
-    setIsDrawerOpen(true);
-  };
-
-  const closeDrawer = () => {
-    setIsDrawerOpen(false);
-  };
-
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -290,6 +280,36 @@ export default function UserEventTable() {
       setSortField(field);
       setSortOrder('asc');
     }
+  };
+
+  // Add the details button to the Actions column of the table
+  const actionsCell = (event: Event) => {
+    // Check if this is an event created by the current user
+    const isUserEvent = (organizerCode: string) => {
+      return profile?.organizer_code === organizerCode;
+    };
+    
+    return (
+      <div className="flex items-center space-x-2">
+        <EventDetailsDrawer 
+          eventId={event.event_id} 
+          trigger={
+            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600 p-1.5">
+              <Info className="h-4 w-4" />
+            </Button>
+          }
+        />
+        {profile?.role === 'organizer' && isUserEvent(event.organizer_code) && (
+          <button
+            onClick={() => navigate(`/dashboard/events/edit/${event.event_id}`)}
+            className="text-gray-600 hover:text-blue-600 p-1.5"
+            title="Edit Event"
+          >
+            <Edit className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -389,25 +409,8 @@ export default function UserEventTable() {
                       {event.status}
                     </span>
                   </Td>
-                  <Td className="px-4 py-4 text-sm text-gray-500 whitespace-nowrap">
-                    <div className="flex items-center space-x-3">
-                      <button
-                        onClick={() => openEventDetails(event.event_id)}
-                        className="flex items-center text-blue-600 hover:text-blue-900"
-                        aria-label="View event details"
-                      >
-                        <Info className="h-4 w-4 mr-1" />
-                        <span>Details</span>
-                      </button>
-                      <button
-                        onClick={() => navigate(`/dashboard/events/${event.eid}/edit`)}
-                        className="flex items-center text-indigo-600 hover:text-indigo-900"
-                        aria-label="Edit event"
-                      >
-                        <Edit className="h-4 w-4 mr-1" />
-                        <span>Edit</span>
-                      </button>
-                    </div>
+                  <Td className="px-4 py-4 text-sm text-gray-500">
+                    {actionsCell(event)}
                   </Td>
                 </Tr>
               ))}
@@ -415,14 +418,6 @@ export default function UserEventTable() {
           </Table>
         </div>
       </div>
-      
-      {selectedEventId && (
-        <EventDetailsDrawer
-          eventId={selectedEventId}
-          isOpen={isDrawerOpen}
-          onClose={closeDrawer}
-        />
-      )}
     </div>
   );
 } 
