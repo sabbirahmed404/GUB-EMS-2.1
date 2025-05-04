@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { Dialog } from '@headlessui/react';
+import { VenueSelect } from './VenueSelect';
 
 interface EventFormData {
   event_name: string;
@@ -33,15 +34,16 @@ interface EventFormData {
 interface EventFormProps {
   mode: 'create' | 'update';
   initialData?: any;
+  onClose?: () => void;
 }
 
-export function EventForm({ mode, initialData }: EventFormProps) {
+export function EventForm({ mode, initialData, onClose }: EventFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const { register, handleSubmit, formState: { errors } } = useForm<EventFormData>({
+  const { register, handleSubmit, formState: { errors }, control, watch } = useForm<EventFormData>({
     defaultValues: mode === 'update' ? {
       ...initialData,
       start_date: initialData?.start_date?.split('T')[0],
@@ -61,6 +63,12 @@ export function EventForm({ mode, initialData }: EventFormProps) {
       }
     } : undefined
   });
+
+  // Watch for date/time changes to pass to VenueSelect
+  const startDate = watch('start_date');
+  const endDate = watch('end_date');
+  const startTime = watch('start_time');
+  const endTime = watch('end_time');
 
   const onSubmit = async (formData: EventFormData) => {
     try {
@@ -164,10 +172,15 @@ export function EventForm({ mode, initialData }: EventFormProps) {
 
   const handleDialogClose = () => {
     setShowSuccessDialog(false);
-    if (mode === 'create') {
-      navigate('/dashboard/events');
+    
+    if (onClose) {
+      onClose();
     } else {
-      navigate('/dashboard/overview');
+      if (mode === 'create') {
+        navigate('/dashboard/events');
+      } else {
+        navigate('/dashboard');
+      }
     }
   };
 
@@ -198,10 +211,21 @@ export function EventForm({ mode, initialData }: EventFormProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-700">Venue *</label>
-              <input
-                type="text"
-                {...register('venue', { required: 'Venue is required' })}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+              <Controller
+                name="venue"
+                control={control}
+                rules={{ required: 'Venue is required' }}
+                render={({ field }) => (
+                  <VenueSelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    startDate={startDate}
+                    endDate={endDate}
+                    startTime={startTime}
+                    endTime={endTime}
+                    currentEventId={initialData?.event_id}
+                  />
+                )}
               />
               {errors.venue && (
                 <p className="mt-1 text-sm text-red-600">{errors.venue.message}</p>

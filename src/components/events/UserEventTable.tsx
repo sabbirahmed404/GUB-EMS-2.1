@@ -5,8 +5,9 @@ import 'react-super-responsive-table/dist/SuperResponsiveTableStyle.css';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCache } from '@/contexts/CacheContext';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
-import { Search, Edit, RefreshCw } from 'lucide-react';
+import { Search, Edit, RefreshCw, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import EventDetailsDrawer from './EventDetailsDrawer';
 
 interface Event {
   event_id: string;
@@ -129,6 +130,8 @@ export default function UserEventTable() {
   const { user, profile } = useAuth();
   const { getData, setData, invalidateCache } = useCache();
   const navigate = useNavigate();
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const fetchUserEvents = async () => {
     if (!profile?.user_id) return;
@@ -263,6 +266,15 @@ export default function UserEventTable() {
         : bValue.localeCompare(aValue);
     });
 
+  const openEventDetails = (eventId: string) => {
+    setSelectedEventId(eventId);
+    setIsDrawerOpen(true);
+  };
+
+  const closeDrawer = () => {
+    setIsDrawerOpen(false);
+  };
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -377,14 +389,25 @@ export default function UserEventTable() {
                       {event.status}
                     </span>
                   </Td>
-                  <Td className="px-4 py-4 text-sm text-gray-500">
-                    <button
-                      onClick={() => navigate(`/dashboard/events/${event.eid}/edit`)}
-                      className="action-button text-blue-600 hover:text-blue-900"
-                    >
-                      <Edit className="h-4 w-4" />
-                      <span className="sm:hidden">Edit Event</span>
-                    </button>
+                  <Td className="px-4 py-4 text-sm text-gray-500 whitespace-nowrap">
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => openEventDetails(event.event_id)}
+                        className="flex items-center text-blue-600 hover:text-blue-900"
+                        aria-label="View event details"
+                      >
+                        <Info className="h-4 w-4 mr-1" />
+                        <span>Details</span>
+                      </button>
+                      <button
+                        onClick={() => navigate(`/dashboard/events/${event.eid}/edit`)}
+                        className="flex items-center text-indigo-600 hover:text-indigo-900"
+                        aria-label="Edit event"
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        <span>Edit</span>
+                      </button>
+                    </div>
                   </Td>
                 </Tr>
               ))}
@@ -392,6 +415,14 @@ export default function UserEventTable() {
           </Table>
         </div>
       </div>
+      
+      {selectedEventId && (
+        <EventDetailsDrawer
+          eventId={selectedEventId}
+          isOpen={isDrawerOpen}
+          onClose={closeDrawer}
+        />
+      )}
     </div>
   );
 } 

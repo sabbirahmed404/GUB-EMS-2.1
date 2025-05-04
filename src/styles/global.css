@@ -1,0 +1,54 @@
+/* Mobile-specific responsive fixes */
+:root {
+  --vh: 1vh;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Use this class for elements that need to be full-height on mobile */
+.mobile-full-height {
+  height: 100vh; /* Fallback */
+  height: calc(var(--vh, 1vh) * 100);
+}
+
+/* Prevent content from being hidden behind bottom nav */
+.pb-safe {
+  padding-bottom: calc(4.625rem + env(safe-area-inset-bottom, 0));
+}
+
+/* For mobile dialogs */
+.mobile-dialog {
+  max-height: 90vh;
+  max-height: calc(var(--vh, 1vh) * 90);
+  overflow-y: auto;
+}
+
+/* iOS Safari body scroll bug fix */
+@supports (-webkit-touch-callout: none) {
+  body {
+    /* iOS specific rules */
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  
+  #root {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+} 

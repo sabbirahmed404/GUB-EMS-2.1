@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react';
 import { Sidebar } from '../Sidebar';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { RoleSwitch } from '../auth/RoleSwitch';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { supabase } from '../../lib/supabase';
+import { MobileNav } from '../MobileNav';
+import { Dialog } from '@headlessui/react';
+import { EventForm } from '../events/EventForm';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -14,7 +17,22 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showEventForm, setShowEventForm] = useState(false);
+  
+  useEffect(() => {
+    // Set viewport height for mobile browsers
+    const setVhProperty = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+    
+    setVhProperty();
+    window.addEventListener('resize', setVhProperty);
+    
+    return () => {
+      window.removeEventListener('resize', setVhProperty);
+    };
+  }, []);
 
   useEffect(() => {
     if (!user) {
@@ -32,66 +50,28 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   };
 
+  const handleCreateEvent = () => {
+    setShowEventForm(true);
+  };
+
   if (!user || !profile) {
     return <LoadingSpinner />;
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex flex-col mobile-full-height bg-gray-100 md:flex-row">
       {/* Desktop sidebar */}
       <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
         <Sidebar />
       </div>
 
-      {/* Mobile sidebar */}
-      <div className={`fixed inset-0 flex z-40 md:hidden ${isMobileMenuOpen ? '' : 'pointer-events-none'}`}>
-        {/* Overlay */}
-        <div 
-          className={`fixed inset-0 bg-gray-600 ${
-            isMobileMenuOpen ? 'opacity-75 pointer-events-auto' : 'opacity-0 pointer-events-none'
-          } transition-opacity ease-linear duration-300`}
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-
-        {/* Sidebar */}
-        <div
-          className={`relative flex-1 flex flex-col max-w-xs w-full pt-5 pb-4 bg-white transform transition ease-in-out duration-300 ${
-            isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
-        >
-          {/* Close button */}
-          <div className="absolute top-0 right-0 -mr-12 pt-2">
-            <button
-              className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <span className="sr-only">Close sidebar</span>
-              <X className="h-6 w-6 text-white" />
-            </button>
-          </div>
-
-          {/* Sidebar component */}
-          <div className="flex-1 h-0 overflow-y-auto">
-            <Sidebar mobile onClose={() => setIsMobileMenuOpen(false)} />
-          </div>
-        </div>
-      </div>
-
       {/* Main content */}
-      <div className="flex flex-col flex-1 md:pl-64">
+      <div className="flex flex-col flex-1 md:pl-64 h-[calc(100vh-4rem)] md:h-screen">
         {/* Top header */}
         <div className="sticky top-0 z-10 flex-shrink-0 flex h-16 bg-white shadow">
           <div className="flex-1 px-4 flex justify-between">
             <div className="flex-1 flex items-center">
-              {/* Mobile menu button */}
-              <button
-                type="button"
-                className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
-                onClick={() => setIsMobileMenuOpen(true)}
-              >
-                <span className="sr-only">Open sidebar</span>
-                <Menu className="block h-6 w-6" />
-              </button>
+              {/* Mobile menu button removed */}
             </div>
 
             {/* Right side header content */}
@@ -107,12 +87,48 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </div>
 
-        {/* Main content */}
-        <main className="flex-1">
-          <div className="py-6">
+        {/* Main content scrollable area */}
+        <main className="flex-1 overflow-y-auto pb-[74px] md:pb-0 pb-safe">
+          <div className="py-6 px-4">
             {children}
           </div>
         </main>
+
+        {/* Mobile Navigation */}
+        <MobileNav onCreateEvent={handleCreateEvent} />
+
+        {/* Event Form Dialog */}
+        <Dialog
+          open={showEventForm}
+          onClose={() => setShowEventForm(false)}
+          className="relative z-50"
+        >
+          <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+          
+          <div className="fixed inset-0 flex items-center justify-center p-4">
+            <Dialog.Panel className="mx-auto max-w-4xl w-full bg-white rounded-lg shadow-xl overflow-hidden mobile-dialog flex flex-col">
+              <div className="flex justify-between items-center p-4 border-b">
+                <Dialog.Title className="text-lg font-medium">
+                  Create New Event
+                </Dialog.Title>
+                <button 
+                  onClick={() => setShowEventForm(false)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto">
+                <EventForm 
+                  mode="create" 
+                  initialData={null}
+                  onClose={() => setShowEventForm(false)}
+                />
+              </div>
+            </Dialog.Panel>
+          </div>
+        </Dialog>
       </div>
     </div>
   );

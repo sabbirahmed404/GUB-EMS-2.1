@@ -3,10 +3,11 @@ import { supabase } from '../../lib/supabase';
 import { Table, Thead, Tbody, Tr, Th, Td } from 'react-super-responsive-table';
 import 'react-super-responsive-table/dist/SuperResponsiveTableStyle.css';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
-import { Search, RefreshCw, PlusCircle } from 'lucide-react';
+import { Search, RefreshCw, PlusCircle, Info } from 'lucide-react';
 import { useCache } from '../../contexts/CacheContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import EventDetailsDrawer from './EventDetailsDrawer';
 
 interface UserEvent {
   event_id: string;
@@ -140,147 +141,49 @@ document.head.appendChild(styleSheet);
 
 export default function AllEventTable() {
   const navigate = useNavigate();
-  const [events, setEvents] = useState<Event[]>([]);
+  const { user } = useAuth();
+  const { cache, setCache } = useCache();
+  
+  const [events, setEvents] = useState<Event[]>(cache.allEvents || []);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortField, setSortField] = useState<keyof Event>('start_date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [sortField, setSortField] = useState<SortField>('start_date');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const { getData, setData, invalidateCache } = useCache();
-  const { user, profile } = useAuth();
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Add debug log for component mount
   useEffect(() => {
-    console.log('AllEventTable mounted');
-    return () => console.log('AllEventTable unmounted');
-  }, []);
+    fetchEvents();
+  }, [sortField, sortOrder]);
 
-  // Add debug log for state changes
-  useEffect(() => {
-    console.log('AllEventTable state:', {
-      eventsLength: events.length,
-      loading,
-      error,
-      user: !!user,
-      profile: !!profile
-    });
-  }, [events, loading, error, user, profile]);
-
-  const fetchAllEvents = async () => {
-    if (!user) {
-      console.log('No user, skipping fetch');
-      return;
-    }
-
+  const fetchEvents = async () => {
     try {
-      console.log('Starting fetchAllEvents');
       setLoading(true);
-      setError(null);
-
-      const { data: eventsData, error: eventsError } = await supabase
+      
+      const { data, error: fetchError } = await supabase
         .from('events')
         .select('*')
-        .order('created_at', { ascending: false });
-
-      console.log('Fetch response:', { 
-        hasData: !!eventsData, 
-        dataLength: eventsData?.length || 0,
-        hasError: !!eventsError 
-      });
-
-      if (eventsError) {
-        console.error('Error fetching events:', eventsError);
-        throw new Error('Failed to fetch events');
-      }
-
-      const eventsList = eventsData || [];
-      console.log('Setting events:', eventsList.length);
+        .order(sortField, { ascending: sortOrder === 'asc' });
       
-      const eventsWithStatus = eventsList.map(event => ({
-        ...event,
-        status: calculateEventStatus(event.start_date, event.end_date)
-      }));
-
-      setEvents(eventsWithStatus);
-      setData('all_events', eventsWithStatus);
-
+      if (fetchError) throw fetchError;
+      
+      setEvents(data as Event[]);
+      setCache({ ...cache, allEvents: data as Event[] });
     } catch (err) {
-      console.error('Error in fetchAllEvents:', err);
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
-      setEvents([]); // Ensure events is set to empty array on error
+      console.error('Error fetching events:', err);
+      setError('Failed to load events');
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch events when component mounts or user changes
-  useEffect(() => {
-    if (user) {
-      console.log('User available, fetching events');
-      const cacheKey = 'all_events';
-      const cachedData = getData(cacheKey);
-
-      if (cachedData) {
-        console.log('Using cached events data');
-        setEvents(cachedData);
-        setLoading(false);
-      } else {
-        console.log('No cached data, fetching fresh data');
-        fetchAllEvents();
-      }
-    }
-  }, [user]);
-
-  // Add refresh button handler
-  const handleRefresh = () => {
-    console.log('Manually refreshing all events data');
-    invalidateCache('all_events');
-    fetchAllEvents();
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
   };
 
-  const filteredEvents = events
-    .filter(event => {
-      const matchesSearch = 
-        event.event_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        event.organizer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        event.eid.toLowerCase().includes(searchQuery.toLowerCase());
-
-      if (statusFilter === 'all') return matchesSearch;
-      
-      const status = calculateEventStatus(event.start_date, event.end_date);
-      return matchesSearch && status === statusFilter;
-    })
-    .sort((a, b) => {
-      const aValue = a[sortField];
-      const bValue = b[sortField];
-      const modifier = sortOrder === 'asc' ? 1 : -1;
-      
-      if (sortField === 'start_date') {
-        return (new Date(aValue).getTime() - new Date(bValue).getTime()) * modifier;
-      }
-      
-      return aValue.localeCompare(bValue) * modifier;
-    });
-
-  console.log('Render state:', {
-    loading,
-    eventsCount: events.length,
-    filteredCount: filteredEvents.length,
-    searchQuery,
-    statusFilter
-  });
-
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-
-  if (error) {
-    return <div className="text-red-500">Error: {error}</div>;
-  }
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
+  const handleSort = (field: keyof Event) => {
+    if (field === sortField) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
@@ -288,76 +191,56 @@ export default function AllEventTable() {
     }
   };
 
+  const filteredEvents = events.filter(event => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      event.event_name.toLowerCase().includes(searchLower) ||
+      event.organizer_name.toLowerCase().includes(searchLower) ||
+      event.organizer_code.toLowerCase().includes(searchLower) ||
+      event.venue.toLowerCase().includes(searchLower) ||
+      (event.description && event.description.toLowerCase().includes(searchLower))
+    );
+  });
+
+  const openEventDetails = (eventId: string) => {
+    setSelectedEventId(eventId);
+    setIsDrawerOpen(true);
+  };
+
+  const closeDrawer = () => {
+    setIsDrawerOpen(false);
+  };
+
   return (
-    <div className="w-full space-y-4 px-2 sm:px-4">
-      {/* Search and filter controls */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-lg shadow">
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
-          <div className="relative w-full sm:w-64">
+    <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0">
+        <h2 className="text-lg font-medium text-gray-900">All Events</h2>
+        <div className="flex space-x-2">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-gray-400" />
+            </div>
             <input
               type="text"
               placeholder="Search events..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full border rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
+              value={searchTerm}
+              onChange={handleSearch}
+              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
-            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
-          
-          {profile?.role === 'organizer' && (
-            <button
-              onClick={() => navigate('/dashboard/events/create')}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors w-full sm:w-auto"
-            >
-              <PlusCircle className="h-5 w-5" />
-              <span>Create Event</span>
-            </button>
-          )}
-        </div>
-
-        <div className="flex items-center gap-4 w-full sm:w-auto">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full sm:w-auto border rounded-md px-3 py-2 focus:ring-2 focus:ring-primary focus:border-transparent"
-          >
-            <option value="all">All Status</option>
-            <option value="upcoming">Upcoming</option>
-            <option value="running">Running</option>
-            <option value="ended">Ended</option>
-          </select>
-          
           <button
-            onClick={handleRefresh}
-            className="p-2 hover:bg-gray-100 rounded-full flex-shrink-0"
-            title="Refresh data"
+            onClick={fetchEvents}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            <RefreshCw className="h-5 w-5" />
+            <RefreshCw className="h-4 w-4 mr-1" />
+            <span className="hidden sm:inline">Refresh</span>
           </button>
         </div>
       </div>
 
-      {/* Content */}
       {loading ? (
-        <div className="flex justify-center py-8">
+        <div className="flex justify-center items-center p-6">
           <LoadingSpinner />
-        </div>
-      ) : error ? (
-        <div className="bg-red-50 text-red-600 p-4 rounded-md">
-          {error}
-        </div>
-      ) : events.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg shadow">
-          <p className="text-gray-500 mb-4">No events here yet</p>
-          {profile?.role === 'organizer' && (
-            <button
-              onClick={() => navigate('/dashboard/events/create')}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
-            >
-              <PlusCircle className="h-5 w-5" />
-              <span>Create Event</span>
-            </button>
-          )}
         </div>
       ) : filteredEvents.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg shadow">
@@ -391,6 +274,7 @@ export default function AllEventTable() {
                   >
                     Status {sortField === 'status' && (sortOrder === 'asc' ? '↑' : '↓')}
                   </Th>
+                  <Th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</Th>
                 </Tr>
               </Thead>
               <Tbody className="bg-white divide-y divide-gray-200">
@@ -404,7 +288,7 @@ export default function AllEventTable() {
                       <div className="text-sm text-gray-900">{event.organizer_name}</div>
                     </Td>
                     <Td className="px-4 py-4">
-                      <div className="text-sm text-gray-900 font-mono">{event.organizer_code}</div>
+                      <div className="text-sm font-mono text-gray-900">{event.organizer_code}</div>
                     </Td>
                     <Td className="px-4 py-4">
                       <div className="text-sm text-gray-900">{event.venue}</div>
@@ -419,12 +303,21 @@ export default function AllEventTable() {
                       </div>
                     </Td>
                     <Td className="px-4 py-4">
-                      <span className={`status-badge px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
                         ${event.status === 'upcoming' ? 'bg-green-100 text-green-800' : 
                           event.status === 'running' ? 'bg-blue-100 text-blue-800' : 
                           'bg-gray-100 text-gray-800'}`}>
                         {event.status}
                       </span>
+                    </Td>
+                    <Td className="px-4 py-4 text-sm text-gray-500">
+                      <button
+                        onClick={() => openEventDetails(event.event_id)}
+                        className="text-blue-600 hover:text-blue-900 flex items-center"
+                      >
+                        <Info className="h-4 w-4 mr-1" />
+                        <span>Details</span>
+                      </button>
                     </Td>
                   </Tr>
                 ))}
@@ -432,6 +325,14 @@ export default function AllEventTable() {
             </Table>
           </div>
         </div>
+      )}
+      
+      {selectedEventId && (
+        <EventDetailsDrawer
+          eventId={selectedEventId}
+          isOpen={isDrawerOpen}
+          onClose={closeDrawer}
+        />
       )}
     </div>
   );
