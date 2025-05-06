@@ -7,7 +7,6 @@ export default function LoadingScreen() {
         <Loader2 className="h-12 w-12 text-white animate-spin mx-auto mb-4" />
         <div className="relative">
           <div className="h-2 w-48 bg-white/20 rounded-full overflow-hidden">
-            <div className="h-full bg-white rounded-full animate-loading-bar" />
           </div>
         </div>
         <p className="text-white mt-4 font-medium">Loading amazing events...</p>

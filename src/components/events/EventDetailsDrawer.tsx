@@ -1,8 +1,13 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { CalendarDays, Clock, MapPin, User, Phone, Mail, Info, Link as LinkIcon } from "lucide-react"
+import { 
+  CalendarDays, Clock, MapPin, User, Phone, Mail, Link as LinkIcon, 
+  Edit, Calendar, Users, AlertCircle, ExternalLink, ChevronUp, X
+} from "lucide-react"
 import { supabase } from "../../lib/supabase"
+import { useNavigate } from "react-router-dom"
+import { useAuth } from "../../contexts/AuthContext"
 
 import { Button } from "../ui/button"
 import {
@@ -15,6 +20,9 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "../ui/drawer"
+import { Avatar } from "../ui/avatar"
+import { Badge } from "../ui/badge"
+import { Separator } from "../ui/separator"
 
 interface EventDetail {
   event_id: string
@@ -30,6 +38,7 @@ interface EventDetail {
   speakers?: string[]
   session_chair?: string
   sponsors?: any
+  created_at?: string
 }
 
 interface Event {
@@ -48,6 +57,8 @@ interface Event {
   contact_email?: string
   banner_url?: string
   status: string
+  created_at?: string
+  created_by?: string
 }
 
 interface EventDetailsDrawerProps {
@@ -60,6 +71,9 @@ export function EventDetailsDrawer({ eventId, trigger }: EventDetailsDrawerProps
   const [eventDetails, setEventDetails] = useState<EventDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [open, setOpen] = useState(false)
+  const navigate = useNavigate()
+  const { profile } = useAuth()
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -99,10 +113,10 @@ export function EventDetailsDrawer({ eventId, trigger }: EventDetailsDrawerProps
       }
     }
     
-    if (eventId) {
+    if (eventId && open) {
       fetchEvent()
     }
-  }, [eventId])
+  }, [eventId, open])
 
   const formatDate = (dateString: string) => {
     if (!dateString) return null
@@ -128,226 +142,321 @@ export function EventDetailsDrawer({ eventId, trigger }: EventDetailsDrawerProps
     return `${displayHours}:${minutes} ${ampm}`
   }
 
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return null
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  // Check if the current user is the organizer of this event
+  const isUserEvent = () => {
+    if (!profile || !event || !profile.organizer_code) return false
+    return profile.organizer_code === event.organizer_code
+  }
+
+  const handleEdit = () => {
+    setOpen(false)
+    
+    // Navigate to the edit page
+    setTimeout(() => {
+      navigate(`/dashboard/events/edit/${event?.eid}`);
+    }, 300)
+  }
+
   return (
-    <Drawer>
+    <Drawer open={open} onOpenChange={setOpen} direction="right">
       <DrawerTrigger asChild>
-        {trigger || <Button variant="outline" size="sm">Details</Button>}
+        {trigger || <Button variant="outline" size="sm">View Details</Button>}
       </DrawerTrigger>
-      <DrawerContent className="max-h-[90vh] overflow-y-auto p-6">
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        ) : error ? (
-          <div className="p-6 text-center text-red-500">{error}</div>
-        ) : event ? (
-          <div className="mx-auto w-full max-w-4xl">
-            <DrawerHeader>
-              <DrawerTitle className="text-2xl font-bold">{event.event_name}</DrawerTitle>
-              <DrawerDescription className="text-base">
-                {event.description || "No description available"}
-              </DrawerDescription>
-            </DrawerHeader>
-            <div className="p-6">
-              {event.banner_url && (
-                <div className="mb-6 rounded-lg overflow-hidden">
-                  <img 
-                    src={event.banner_url} 
-                    alt={`${event.event_name} banner`} 
-                    className="w-full h-auto object-cover"
-                  />
+      <DrawerContent className="h-full max-w-md w-full rounded-l-lg bg-[hsl(var(--background))] border-l border-[hsl(var(--border))]">
+        <div className="h-full flex flex-col bg-[hsl(var(--background))]">
+          <DrawerHeader className="p-4 border-b bg-[hsl(var(--background))]">
+            <div className="flex items-center justify-between">
+              <DrawerTitle className="text-xl font-semibold">Event Details</DrawerTitle>
+              <DrawerClose className="rounded-full p-2 hover:bg-gray-100">
+                <X className="h-5 w-5" />
+              </DrawerClose>
+            </div>
+          </DrawerHeader>
+          
+          <div className="flex-1 overflow-y-auto bg-[hsl(var(--background))]">
+            {loading ? (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              </div>
+            ) : error ? (
+              <div className="p-8 text-center">
+                <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-destructive">Error Loading Event</h3>
+                <p className="text-muted-foreground mt-2">{error}</p>
+              </div>
+            ) : event ? (
+              <div className="p-6 space-y-8">
+                <div className="flex items-center gap-2">
+                  <Badge variant={event.status === 'active' ? 'default' : 'secondary'} className="mb-2">
+                    {event.status === 'active' ? 'Active Event' : event.status}
+                  </Badge>
                 </div>
-              )}
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="flex items-start space-x-3">
-                    <CalendarDays className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                    <div>
-                      <h3 className="font-medium">Date</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {formatDate(event.start_date)} - {formatDate(event.end_date)}
+                
+                <h2 className="text-2xl font-bold">{event.event_name}</h2>
+                
+                {event.description && (
+                  <p className="text-muted-foreground">{event.description}</p>
+                )}
+                
+                {event.banner_url && (
+                  <div className="rounded-lg overflow-hidden shadow-md">
+                    <img 
+                      src={event.banner_url} 
+                      alt={`${event.event_name} banner`} 
+                      className="w-full h-auto object-cover"
+                    />
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-1 gap-6">
+                  <div className="bg-muted/40 rounded-lg p-4 space-y-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <Calendar className="h-5 w-5 text-primary" />
+                      Event Schedule
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Start</p>
+                        <p className="text-sm text-muted-foreground">{formatDate(event.start_date)}</p>
+                        {event.start_time && (
+                          <p className="text-sm text-muted-foreground">{formatTime(event.start_time)}</p>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">End</p>
+                        <p className="text-sm text-muted-foreground">{formatDate(event.end_date)}</p>
+                        {event.end_time && (
+                          <p className="text-sm text-muted-foreground">{formatTime(event.end_time)}</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Venue</p>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <MapPin className="h-4 w-4 text-primary shrink-0" />
+                        {event.venue}
                       </p>
                     </div>
                   </div>
                   
-                  {(event.start_time || event.end_time) && (
-                    <div className="flex items-start space-x-3">
-                      <Clock className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                      <div>
-                        <h3 className="font-medium">Time</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {formatTime(event.start_time)} - {formatTime(event.end_time)}
-                        </p>
+                  <div className="bg-muted/40 rounded-lg p-4 space-y-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <Users className="h-5 w-5 text-primary" />
+                      Organizer Information
+                    </h3>
+                    
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8 bg-primary/10">
+                          <User className="h-4 w-4 text-primary" />
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium">{event.organizer_name}</p>
+                          <p className="text-xs text-muted-foreground">Code: {event.organizer_code}</p>
+                        </div>
+                      </div>
+                      
+                      {event.contact_email && (
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-primary shrink-0" />
+                          <a 
+                            href={`mailto:${event.contact_email}`} 
+                            className="text-sm hover:underline"
+                          >
+                            {event.contact_email}
+                          </a>
+                        </div>
+                      )}
+                      
+                      {event.contact_phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-primary shrink-0" />
+                          <a 
+                            href={`tel:${event.contact_phone}`} 
+                            className="text-sm hover:underline"
+                          >
+                            {event.contact_phone}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {eventDetails?.session_chair && (
+                    <div className="bg-muted/40 rounded-lg p-4">
+                      <h3 className="font-semibold text-lg mb-3">Session Chair</h3>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8 bg-primary/10">
+                          <User className="h-4 w-4 text-primary" />
+                        </Avatar>
+                        <span className="text-sm">{eventDetails.session_chair}</span>
                       </div>
                     </div>
                   )}
                   
-                  <div className="flex items-start space-x-3">
-                    <MapPin className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                    <div>
-                      <h3 className="font-medium">Venue</h3>
-                      <p className="text-sm text-muted-foreground">{event.venue}</p>
+                  {eventDetails?.speakers && eventDetails.speakers.length > 0 && (
+                    <div className="bg-muted/40 rounded-lg p-4">
+                      <h3 className="font-semibold text-lg mb-3">Speakers</h3>
+                      <ul className="space-y-2">
+                        {eventDetails.speakers.map((speaker, index) => (
+                          <li key={index} className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8 bg-primary/10">
+                              <User className="h-4 w-4 text-primary" />
+                            </Avatar>
+                            <span className="text-sm">{speaker}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                  </div>
+                  )}
                   
-                  <div className="flex items-start space-x-3">
-                    <User className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                    <div>
-                      <h3 className="font-medium">Organizer</h3>
-                      <p className="text-sm text-muted-foreground">{event.organizer_name}</p>
-                      <p className="text-xs text-muted-foreground">Code: {event.organizer_code}</p>
+                  {eventDetails?.chief_guests && eventDetails.chief_guests.length > 0 && (
+                    <div className="bg-muted/40 rounded-lg p-4">
+                      <h3 className="font-semibold text-lg mb-3">Chief Guests</h3>
+                      <ul className="space-y-2">
+                        {eventDetails.chief_guests.map((guest, index) => (
+                          <li key={index} className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8 bg-primary/10">
+                              <User className="h-4 w-4 text-primary" />
+                            </Avatar>
+                            <span className="text-sm">{guest}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                  </div>
+                  )}
                   
-                  {event.contact_phone && (
-                    <div className="flex items-start space-x-3">
-                      <Phone className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                      <div>
-                        <h3 className="font-medium">Contact Phone</h3>
-                        <p className="text-sm text-muted-foreground">{event.contact_phone}</p>
+                  {eventDetails?.special_guests && eventDetails.special_guests.length > 0 && (
+                    <div className="bg-muted/40 rounded-lg p-4">
+                      <h3 className="font-semibold text-lg mb-3">Special Guests</h3>
+                      <ul className="space-y-2">
+                        {eventDetails.special_guests.map((guest, index) => (
+                          <li key={index} className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8 bg-primary/10">
+                              <User className="h-4 w-4 text-primary" />
+                            </Avatar>
+                            <span className="text-sm">{guest}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {eventDetails?.social_media_links && Object.values(eventDetails.social_media_links).some(link => link) && (
+                    <div className="bg-muted/40 rounded-lg p-4">
+                      <h3 className="font-semibold text-lg mb-3">Connect Online</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {eventDetails.social_media_links.facebook && (
+                          <a 
+                            href={eventDetails.social_media_links.facebook} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm bg-primary/10 text-primary px-3 py-1 rounded-full hover:bg-primary/20 transition-colors"
+                          >
+                            Facebook
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                        {eventDetails.social_media_links.twitter && (
+                          <a 
+                            href={eventDetails.social_media_links.twitter} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm bg-primary/10 text-primary px-3 py-1 rounded-full hover:bg-primary/20 transition-colors"
+                          >
+                            Twitter
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                        {eventDetails.social_media_links.instagram && (
+                          <a 
+                            href={eventDetails.social_media_links.instagram} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm bg-primary/10 text-primary px-3 py-1 rounded-full hover:bg-primary/20 transition-colors"
+                          >
+                            Instagram
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                        {eventDetails.social_media_links.linkedin && (
+                          <a 
+                            href={eventDetails.social_media_links.linkedin} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm bg-primary/10 text-primary px-3 py-1 rounded-full hover:bg-primary/20 transition-colors"
+                          >
+                            LinkedIn
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
+                        {eventDetails.social_media_links.website && (
+                          <a 
+                            href={eventDetails.social_media_links.website} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm bg-primary/10 text-primary px-3 py-1 rounded-full hover:bg-primary/20 transition-colors"
+                          >
+                            Website
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
                       </div>
                     </div>
                   )}
                   
-                  {event.contact_email && (
-                    <div className="flex items-start space-x-3">
-                      <Mail className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                      <div>
-                        <h3 className="font-medium">Contact Email</h3>
-                        <p className="text-sm text-muted-foreground">{event.contact_email}</p>
-                      </div>
+                  {event.created_at && (
+                    <div className="text-xs text-muted-foreground">
+                      <p>Created: {formatDateTime(event.created_at)}</p>
                     </div>
                   )}
                 </div>
-                
-                {eventDetails && (
-                  <div className="space-y-4">
-                    {eventDetails.session_chair && (
-                      <div className="flex items-start space-x-3">
-                        <User className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                        <div>
-                          <h3 className="font-medium">Session Chair</h3>
-                          <p className="text-sm text-muted-foreground">{eventDetails.session_chair}</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {eventDetails.chief_guests && eventDetails.chief_guests.length > 0 && (
-                      <div className="flex items-start space-x-3">
-                        <User className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                        <div>
-                          <h3 className="font-medium">Chief Guests</h3>
-                          <ul className="text-sm text-muted-foreground list-disc pl-5">
-                            {eventDetails.chief_guests.map((guest, index) => (
-                              <li key={index}>{guest}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {eventDetails.special_guests && eventDetails.special_guests.length > 0 && (
-                      <div className="flex items-start space-x-3">
-                        <User className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                        <div>
-                          <h3 className="font-medium">Special Guests</h3>
-                          <ul className="text-sm text-muted-foreground list-disc pl-5">
-                            {eventDetails.special_guests.map((guest, index) => (
-                              <li key={index}>{guest}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {eventDetails.speakers && eventDetails.speakers.length > 0 && (
-                      <div className="flex items-start space-x-3">
-                        <User className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                        <div>
-                          <h3 className="font-medium">Speakers</h3>
-                          <ul className="text-sm text-muted-foreground list-disc pl-5">
-                            {eventDetails.speakers.map((speaker, index) => (
-                              <li key={index}>{speaker}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {eventDetails.social_media_links && Object.values(eventDetails.social_media_links).some(link => link) && (
-                      <div className="flex items-start space-x-3">
-                        <LinkIcon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                        <div>
-                          <h3 className="font-medium">Social Media</h3>
-                          <div className="flex flex-wrap gap-2 mt-1">
-                            {eventDetails.social_media_links.facebook && (
-                              <a 
-                                href={eventDetails.social_media_links.facebook} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-blue-500 hover:underline"
-                              >
-                                Facebook
-                              </a>
-                            )}
-                            {eventDetails.social_media_links.twitter && (
-                              <a 
-                                href={eventDetails.social_media_links.twitter} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-blue-500 hover:underline"
-                              >
-                                Twitter
-                              </a>
-                            )}
-                            {eventDetails.social_media_links.instagram && (
-                              <a 
-                                href={eventDetails.social_media_links.instagram} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-blue-500 hover:underline"
-                              >
-                                Instagram
-                              </a>
-                            )}
-                            {eventDetails.social_media_links.linkedin && (
-                              <a 
-                                href={eventDetails.social_media_links.linkedin} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-blue-500 hover:underline"
-                              >
-                                LinkedIn
-                              </a>
-                            )}
-                            {eventDetails.social_media_links.website && (
-                              <a 
-                                href={eventDetails.social_media_links.website} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-blue-500 hover:underline"
-                              >
-                                Website
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
-            </div>
-            <DrawerFooter>
-              <DrawerClose asChild>
-                <Button variant="outline">Close</Button>
-              </DrawerClose>
-            </DrawerFooter>
+            ) : (
+              <div className="py-16 text-center">
+                <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium">Event Not Found</h3>
+                <p className="text-muted-foreground mt-2">The requested event could not be found.</p>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="p-6 text-center">Event not found</div>
-        )}
+          
+          {event && (
+            <DrawerFooter className="p-4 border-t bg-[hsl(var(--background))]">
+              <div className="flex flex-col sm:flex-row gap-3 w-full">
+                {profile?.role === 'organizer' && isUserEvent() && (
+                  <Button 
+                    variant="default" 
+                    onClick={handleEdit}
+                    className="w-full sm:flex-1"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Event
+                  </Button>
+                )}
+                <DrawerClose asChild>
+                  <Button variant="outline" className="w-full sm:flex-1">
+                    Close
+                  </Button>
+                </DrawerClose>
+              </div>
+            </DrawerFooter>
+          )}
+        </div>
       </DrawerContent>
     </Drawer>
   )

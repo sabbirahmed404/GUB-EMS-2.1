@@ -286,7 +286,8 @@ export default function UserEventTable() {
   const actionsCell = (event: Event) => {
     // Check if this is an event created by the current user
     const isUserEvent = (organizerCode: string) => {
-      return profile?.organizer_code === organizerCode;
+      if (!profile || !profile.organizer_code) return false;
+      return profile.organizer_code === organizerCode;
     };
     
     return (
@@ -294,7 +295,7 @@ export default function UserEventTable() {
         <EventDetailsDrawer 
           eventId={event.event_id} 
           trigger={
-            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600 p-1.5">
+            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600 p-1.5" title="View Event Details">
               <Info className="h-4 w-4" />
             </Button>
           }
@@ -302,10 +303,11 @@ export default function UserEventTable() {
         {profile?.role === 'organizer' && isUserEvent(event.organizer_code) && (
           <button
             onClick={() => navigate(`/dashboard/events/edit/${event.event_id}`)}
-            className="text-gray-600 hover:text-blue-600 p-1.5"
+            className="text-green-600 hover:text-green-700 hover:bg-green-50 p-1.5 border border-green-200 rounded-md flex items-center"
             title="Edit Event"
           >
-            <Edit className="h-4 w-4" />
+            <Edit className="h-4 w-4 mr-1" />
+            <span>Edit</span>
           </button>
         )}
       </div>

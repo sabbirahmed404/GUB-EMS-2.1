@@ -3,12 +3,12 @@ import { Sidebar } from '../Sidebar';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
-import { RoleSwitch } from '../auth/RoleSwitch';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { supabase } from '../../lib/supabase';
 import { MobileNav } from '../MobileNav';
 import { Dialog } from '@headlessui/react';
 import { EventForm } from '../events/EventForm';
+import { ProfileButton } from '../profile/ProfileButton';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -40,16 +40,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   }, [user, navigate]);
 
-  const handleSignOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      navigate('/auth/login');
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
-
   const handleCreateEvent = () => {
     setShowEventForm(true);
   };
@@ -58,39 +48,43 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return <LoadingSpinner />;
   }
 
+  // Get current time for greeting
+  const currentHour = new Date().getHours();
+  let greeting = "Good morning";
+  if (currentHour >= 12 && currentHour < 17) {
+    greeting = "Good afternoon";
+  } else if (currentHour >= 17) {
+    greeting = "Good evening";
+  }
+
   return (
-    <div className="flex flex-col mobile-full-height bg-gray-100 md:flex-row">
+    <div className="flex flex-col mobile-full-height bg-blue-800 bg-dot-pattern text-white md:flex-row">
       {/* Desktop sidebar */}
       <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
         <Sidebar />
       </div>
 
       {/* Main content */}
-      <div className="flex flex-col flex-1 md:pl-64 h-[calc(100vh-4rem)] md:h-screen">
-        {/* Top header */}
-        <div className="sticky top-0 z-10 flex-shrink-0 flex h-16 bg-white shadow">
-          <div className="flex-1 px-4 flex justify-between">
-            <div className="flex-1 flex items-center">
-              {/* Mobile menu button removed */}
-            </div>
-
-            {/* Right side header content */}
-            <div className="ml-4 flex items-center md:ml-6">
-              <RoleSwitch />
-              <button
-                onClick={handleSignOut}
-                className="ml-4 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-              >
-                Sign out
-              </button>
-            </div>
-          </div>
+      <div className="flex flex-col flex-1 md:pl-64 h-screen">
+        {/* Profile Button in top right corner */}
+        <div className="absolute top-9 right-16 z-10">
+          <ProfileButton />
         </div>
-
+        
+        {/* Welcome section */}
+        <div className="px-6 pt-6 pb-2">
+          <h1 className="text-2xl font-bold text-white">{greeting}, {profile.full_name}</h1>
+          <p className="text-blue-100 mt-1 opacity-80">Welcome to your Dashboard</p>
+        </div>
+        
         {/* Main content scrollable area */}
         <main className="flex-1 overflow-y-auto pb-[74px] md:pb-0 pb-safe">
-          <div className="py-6 px-4">
-            {children}
+          <div className="py-4 px-4">
+            <div className="bg-blue-50 text-blue-800 rounded-lg shadow-lg blue-shadow-lg dashboard-accent-top overflow-hidden">
+              <div className="p-6">
+                {children}
+              </div>
+            </div>
           </div>
         </main>
 
@@ -107,13 +101,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           
           <div className="fixed inset-0 flex items-center justify-center p-4">
             <Dialog.Panel className="mx-auto max-w-4xl w-full bg-white rounded-lg shadow-xl overflow-hidden mobile-dialog flex flex-col">
-              <div className="flex justify-between items-center p-4 border-b">
+              <div className="flex justify-between items-center p-4 border-b bg-blue-800 text-white">
                 <Dialog.Title className="text-lg font-medium">
                   Create New Event
                 </Dialog.Title>
                 <button 
                   onClick={() => setShowEventForm(false)}
-                  className="text-gray-400 hover:text-gray-500"
+                  className="text-white hover:text-blue-100"
                 >
                   <X className="h-6 w-6" />
                 </button>

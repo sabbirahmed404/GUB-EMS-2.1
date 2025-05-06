@@ -8,9 +8,11 @@ import {
   Plane,
   HelpCircle,
   Menu,
-  X
+  X,
+  ShieldCheck
 } from 'lucide-react';
 import Logo from './Logo';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SidebarProps {
   mobile?: boolean;
@@ -20,6 +22,12 @@ interface SidebarProps {
 export const Sidebar = ({ mobile, onClose }: SidebarProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { profile } = useAuth();
+  
+  // Check if the user has superadmin role
+  // Note: We're considering a user with role 'organizer' and custom attribute as superadmin
+  // This is just a placeholder - in a real app, you would have a specific superadmin role
+  const isSuperAdmin = profile?.role === 'organizer' && profile?.auth_id === 'superadmin';
 
   const handleItemClick = () => {
     if (mobile && onClose) {
@@ -62,18 +70,25 @@ export const Sidebar = ({ mobile, onClose }: SidebarProps) => {
       name: 'Help',
       path: '/dashboard/help',
       icon: HelpCircle
-    }
+    },
+    // Add SuperAdmin link (only visible to organizers)
+    ...(profile?.role === 'organizer' ? [{
+      name: 'Super Admin',
+      path: '/dashboard/superadmin',
+      icon: ShieldCheck
+    }] : [])
   ];
 
   return (
-    <div className="flex h-full flex-col bg-white border-r border-gray-200">
+    <div className="flex h-full flex-col bg-gradient-to-b from-blue-800 to-blue-600 text-white">
       <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
         <div className="flex items-center justify-center flex-shrink-0 px-4">
           <Logo size="lg" className="scale-150" />
         </div>
-        <nav className="mt-5 flex-1 px-2 space-y-1">
+        <nav className="mt-8 flex-1 px-4 space-y-2">
           {navigationItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname === item.path || 
+              (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
             const Icon = item.icon;
             
             return (
@@ -81,17 +96,17 @@ export const Sidebar = ({ mobile, onClose }: SidebarProps) => {
                 key={item.name}
                 to={item.path}
                 onClick={handleItemClick}
-                className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
+                className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
                   isActive
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-white text-blue-800 shadow-md'
+                    : 'text-blue-50 hover:bg-blue-700/50 hover:text-white'
                 }`}
               >
                 <Icon
-                  className={`mr-3 flex-shrink-0 h-6 w-6 ${
+                  className={`mr-3 flex-shrink-0 h-5 w-5 ${
                     isActive
-                      ? 'text-gray-500'
-                      : 'text-gray-400 group-hover:text-gray-500'
+                      ? 'text-blue-600'
+                      : 'text-blue-200 group-hover:text-white'
                   }`}
                 />
                 {item.name}

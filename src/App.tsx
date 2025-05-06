@@ -21,6 +21,8 @@ import { useAuth } from './contexts/AuthContext';
 import TeamsDashboard from './pages/Teams/TeamsDashboard';
 import PlanningDashboard from './pages/Planning/PlanningDashboard';
 import HelpCenter from './pages/Help/HelpCenter';
+import SuperAdmin from './pages/dashboard/SuperAdmin';
+import NotFound from './pages/NotFound';
 
 function PublicLayout() {
   useEffect(() => {
@@ -31,7 +33,7 @@ function PublicLayout() {
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <Navbar />
-      <main className="flex-grow pt-24">
+      <main className="flex-grow">
         <Suspense fallback={<LoadingSpinner />}>
           <Outlet />
         </Suspense>
@@ -77,6 +79,11 @@ function App() {
                 <Route path="team" element={<TeamsDashboard />} />
                 <Route path="planning" element={<PlanningDashboard />} />
                 <Route path="help" element={<HelpCenter />} />
+                <Route path="admin" element={<SuperAdmin />} />
+                <Route path="superadmin" element={<SuperAdmin />} />
+                
+                {/* 404 for dashboard routes that don't exist */}
+                <Route path="*" element={<NotFound />} />
               </Route>
             </Route>
 
@@ -87,8 +94,8 @@ function App() {
               <Route path="/about" element={<About />} />
             </Route>
 
-            {/* Catch all route */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {/* Catch all route - show 404 */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>
       </CacheProvider>

@@ -13,6 +13,11 @@ export interface UserProfile {
   role: Role;
   phone: string | null;
   avatar_url?: string;
+  organizer_code?: string;
+  role_in_institute?: string;
+  description?: string;
+  club?: string;
+  club_position?: string;
   created_at: string;
   updated_at: string;
 }
@@ -24,6 +29,7 @@ export interface AuthContextType {
   error: Error | null;
   signInWithGoogle: () => Promise<{ success: boolean }>;
   updateUserRole: (role: Role) => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -186,13 +192,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      setUser(null);
+      setProfile(null);
+    } catch (err) {
+      console.error('Error signing out:', err);
+      throw err;
+    }
+  };
+
   const value = {
     user,
     profile,
     loading,
     error,
     signInWithGoogle,
-    updateUserRole
+    updateUserRole,
+    signOut
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

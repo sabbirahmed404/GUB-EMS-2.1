@@ -1,63 +1,72 @@
-"use client"
-
 import * as React from "react"
-import * as DialogPrimitive from "@radix-ui/react-dialog"
+import { Drawer as DrawerPrimitive } from "vaul"
 
 import { cn } from "../../lib/utils"
 
-const Drawer = DialogPrimitive.Root
+const Drawer = ({
+  shouldScaleBackground = true,
+  ...props
+}: React.ComponentProps<typeof DrawerPrimitive.Root>) => (
+  <DrawerPrimitive.Root
+    shouldScaleBackground={shouldScaleBackground}
+    {...props}
+  />
+)
+Drawer.displayName = "Drawer"
 
-const DrawerTrigger = DialogPrimitive.Trigger
+const DrawerTrigger = DrawerPrimitive.Trigger
 
-const DrawerPortal = DialogPrimitive.Portal
+const DrawerPortal = DrawerPrimitive.Portal
 
-const DrawerClose = DialogPrimitive.Close
+const DrawerClose = DrawerPrimitive.Close
 
 const DrawerOverlay = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Overlay>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
+  React.ElementRef<typeof DrawerPrimitive.Overlay>,
+  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Overlay
+  <DrawerPrimitive.Overlay
     ref={ref}
-    className={cn(
-      "fixed inset-0 z-50 bg-black/80 backdrop-blur-sm data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out",
-      className
-    )}
+    className={cn("fixed inset-0 z-50 bg-black/80", className)}
     {...props}
   />
 ))
-DrawerOverlay.displayName = DialogPrimitive.Overlay.displayName
+DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName
 
 const DrawerContent = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  React.ElementRef<typeof DrawerPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content> & {
+    direction?: "top" | "right" | "bottom" | "left"
+  }
+>(({ className, children, direction = "right", ...props }, ref) => (
   <DrawerPortal>
     <DrawerOverlay />
-    <DialogPrimitive.Content
+    <DrawerPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 mt-24 h-[85vh] bg-white shadow-lg transition-transform duration-300 ease-out data-[state=open]:translate-y-0 data-[state=closed]:translate-y-full sm:rounded-t-xl",
+        "bg-[hsl(var(--background))] fixed z-50 outline-none",
+        {
+          "inset-y-0 right-0 h-full w-3/4 sm:max-w-sm border-l": direction === "right",
+          "inset-y-0 left-0 h-full w-3/4 sm:max-w-sm border-r": direction === "left",
+          "inset-x-0 bottom-0 h-auto max-h-[96%] border-t": direction === "bottom",
+          "inset-x-0 top-0 h-auto max-h-[96%] border-b": direction === "top",
+        },
         className
       )}
       {...props}
     >
-      <div className="absolute left-1/2 top-3 h-1.5 w-[60px] translate-x-[-50%] rounded-full bg-muted" />
+      <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
       {children}
-    </DialogPrimitive.Content>
+    </DrawerPrimitive.Content>
   </DrawerPortal>
 ))
-DrawerContent.displayName = DialogPrimitive.Content.displayName
+DrawerContent.displayName = DrawerPrimitive.Content.displayName
 
 const DrawerHeader = ({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn(
-      "flex flex-col space-y-1.5 text-center sm:text-left",
-      className
-    )}
+    className={cn("grid gap-1.5 p-4 text-center sm:text-left", className)}
     {...props}
   />
 )
@@ -68,38 +77,38 @@ const DrawerFooter = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn(
-      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
-      className
-    )}
+    className={cn("mt-auto flex flex-col gap-2 p-4", className)}
     {...props}
   />
 )
 DrawerFooter.displayName = "DrawerFooter"
 
 const DrawerTitle = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Title>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
+  React.ElementRef<typeof DrawerPrimitive.Title>,
+  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Title>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Title
+  <DrawerPrimitive.Title
     ref={ref}
-    className={cn("text-lg font-semibold leading-none tracking-tight", className)}
+    className={cn(
+      "text-lg font-semibold leading-none tracking-tight",
+      className
+    )}
     {...props}
   />
 ))
-DrawerTitle.displayName = DialogPrimitive.Title.displayName
+DrawerTitle.displayName = DrawerPrimitive.Title.displayName
 
 const DrawerDescription = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Description>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
+  React.ElementRef<typeof DrawerPrimitive.Description>,
+  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Description>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Description
+  <DrawerPrimitive.Description
     ref={ref}
     className={cn("text-sm text-muted-foreground", className)}
     {...props}
   />
 ))
-DrawerDescription.displayName = DialogPrimitive.Description.displayName
+DrawerDescription.displayName = DrawerPrimitive.Description.displayName
 
 export {
   Drawer,
@@ -112,4 +121,4 @@ export {
   DrawerFooter,
   DrawerTitle,
   DrawerDescription,
-} 
+}

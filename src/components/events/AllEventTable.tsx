@@ -436,7 +436,7 @@ export default function AllEventTable() {
                         <EventDetailsDrawer 
                           eventId={event.event_id} 
                           trigger={
-                            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600 p-1.5">
+                            <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600 p-1.5" title="View Event Details">
                               <Info className="h-4 w-4" />
                             </Button>
                           }

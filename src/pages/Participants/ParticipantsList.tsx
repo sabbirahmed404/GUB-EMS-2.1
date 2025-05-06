@@ -168,7 +168,6 @@ export default function ParticipantsList() {
     <div className="p-6 max-w-7xl mx-auto">
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-semibold">Event Participants</h1>
           <button
             onClick={() => {
               if (selectedEvent) {

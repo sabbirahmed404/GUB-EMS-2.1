@@ -1,6 +1,88 @@
 /* Mobile-specific responsive fixes */
 :root {
   --vh: 1vh;
+  
+  /* Blue color palette */
+  --blue-primary: #03045e;
+  --blue-secondary: #023e8a;
+  --blue-tertiary: #0077b6;
+  --blue-quaternary: #0096c7;
+  --blue-accent: #00b4d8;
+  --blue-highlight: #48cae4;
+  --blue-light: #90e0ef;
+  --blue-lighter: #ade8f4;
+  --blue-lightest: #caf0f8;
+}
+
+/* Blue gradients */
+.gradient-top {
+  background: linear-gradient(0deg, #03045e, #023e8a, #0077b6, #0096c7, #00b4d8, #48cae4, #90e0ef, #ade8f4, #caf0f8);
+}
+.gradient-right {
+  background: linear-gradient(90deg, #03045e, #023e8a, #0077b6, #0096c7, #00b4d8, #48cae4, #90e0ef, #ade8f4, #caf0f8);
+}
+.gradient-bottom {
+  background: linear-gradient(180deg, #03045e, #023e8a, #0077b6, #0096c7, #00b4d8, #48cae4, #90e0ef, #ade8f4, #caf0f8);
+}
+.gradient-left {
+  background: linear-gradient(270deg, #03045e, #023e8a, #0077b6, #0096c7, #00b4d8, #48cae4, #90e0ef, #ade8f4, #caf0f8);
+}
+.gradient-top-right {
+  background: linear-gradient(45deg, #03045e, #023e8a, #0077b6, #0096c7, #00b4d8, #48cae4, #90e0ef, #ade8f4, #caf0f8);
+}
+.gradient-bottom-right {
+  background: linear-gradient(135deg, #03045e, #023e8a, #0077b6, #0096c7, #00b4d8, #48cae4, #90e0ef, #ade8f4, #caf0f8);
+}
+.gradient-top-left {
+  background: linear-gradient(225deg, #03045e, #023e8a, #0077b6, #0096c7, #00b4d8, #48cae4, #90e0ef, #ade8f4, #caf0f8);
+}
+.gradient-bottom-left {
+  background: linear-gradient(315deg, #03045e, #023e8a, #0077b6, #0096c7, #00b4d8, #48cae4, #90e0ef, #ade8f4, #caf0f8);
+}
+.gradient-radial {
+  background: radial-gradient(#03045e, #023e8a, #0077b6, #0096c7, #00b4d8, #48cae4, #90e0ef, #ade8f4, #caf0f8);
+}
+
+/* Background patterns */
+.bg-grid-pattern {
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.bg-dot-pattern {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Dashboard accents */
+.dashboard-accent-top {
+  position: relative;
+}
+
+.dashboard-accent-top::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  width: 80%;
+  height: 3px;
+  background: linear-gradient(to right, #00b4d8, #0077b6, #00b4d8);
+  border-radius: 0 0 3px 3px;
+}
+
+/* Subtle blue shadow */
+.blue-shadow {
+  box-shadow: 0 4px 6px -1px rgba(0, 119, 182, 0.1), 0 2px 4px -1px rgba(0, 119, 182, 0.06);
+}
+
+.blue-shadow-md {
+  box-shadow: 0 4px 12px -1px rgba(0, 119, 182, 0.1), 0 2px 6px -1px rgba(0, 119, 182, 0.06);
+}
+
+.blue-shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 119, 182, 0.1), 0 4px 6px -2px rgba(0, 119, 182, 0.05);
 }
 
 html, body {
@@ -32,22 +114,15 @@ html, body {
   overflow-y: auto;
 }
 
-/* iOS Safari body scroll bug fix */
+/* iOS Safari body scroll bug fix - modified to prevent 10px shift */
 @supports (-webkit-touch-callout: none) {
   body {
     /* iOS specific rules */
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
+    height: -webkit-fill-available;
   }
   
   #root {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    height: 100%;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
