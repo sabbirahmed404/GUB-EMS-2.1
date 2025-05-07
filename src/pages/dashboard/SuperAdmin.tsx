@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { adminSupabase } from '@/lib/adminSupabase';
 import { Table, Thead, Tbody, Tr, Th, Td } from 'react-super-responsive-table';
 import 'react-super-responsive-table/dist/SuperResponsiveTableStyle.css';
 import { useAuth } from '@/contexts/AuthContext';
-import { Search, Users, RefreshCw, Eye, Filter, ShieldCheck } from 'lucide-react';
+import { Search, Users, RefreshCw, Eye, Filter, ShieldCheck, Clock, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { Input } from '@/components/ui/input';
 import { UserDetailsDrawer } from '@/components/admin/UserDetailsDrawer';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface User {
   user_id: string;
@@ -16,11 +18,12 @@ interface User {
   username: string;
   full_name: string;
   email: string;
-  role: 'organizer' | 'visitor';
+  role: 'organizer' | 'visitor' | 'admin';
   created_at: string;
   updated_at: string;
   avatar_url?: string;
   organizer_code?: string;
+  eventCount?: number;
 }
 
 export default function SuperAdmin() {
@@ -29,14 +32,26 @@ export default function SuperAdmin() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [serviceKeyMissing, setServiceKeyMissing] = useState(false);
   const { profile } = useAuth();
   const navigate = useNavigate();
 
+  // Debug log for troubleshooting - remove in production
+  console.log('SuperAdmin component rendered:', {
+    hasProfile: !!profile,
+    role: profile?.role,
+    userId: profile?.user_id
+  });
+
   useEffect(() => {
-    // Redirect if user is not an organizer (only organizers can access admin)
-    if (profile && profile.role !== 'organizer') {
+    // Check if user has admin role
+    if (profile?.role !== 'admin') {
+      toast.error("Access denied. Only administrators can access this page.");
       navigate('/dashboard');
-    } else {
+      return;
+    }
+
+    if (profile?.user_id) {
       fetchUsers();
     }
   }, [profile, roleFilter, navigate]);
@@ -47,8 +62,10 @@ export default function SuperAdmin() {
     try {
       setLoading(true);
       setError(null);
+      setServiceKeyMissing(false);
 
-      let query = supabase
+      // Use adminSupabase to bypass RLS
+      let query = adminSupabase
         .from('users')
         .select('*')
         .order('created_at', { ascending: false });
@@ -59,12 +76,35 @@ export default function SuperAdmin() {
 
       const { data, error: fetchError } = await query;
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        // Check if the error is related to service role key
+        if (fetchError.message.includes('service_role') || fetchError.message.includes('permission') || fetchError.message.includes('JWT')) {
+          console.error('Service role key error:', fetchError);
+          setServiceKeyMissing(true);
+          throw new Error('Admin access unavailable. Please check your service role key configuration.');
+        }
+        throw fetchError;
+      }
 
-      setUsers(data || []);
+      // Fetch event counts for each user
+      const usersWithEventCounts = await Promise.all(
+        (data || []).map(async (user) => {
+          const { count, error: countError } = await adminSupabase
+            .from('events')
+            .select('*', { count: 'exact', head: true })
+            .eq('created_by', user.user_id);
+          
+          return {
+            ...user,
+            eventCount: countError ? 0 : count || 0
+          };
+        })
+      );
+
+      setUsers(usersWithEventCounts || []);
     } catch (err) {
       console.error('Error fetching users:', err);
-      setError('Failed to load users');
+      setError(err instanceof Error ? err.message : 'Failed to load users');
     } finally {
       setLoading(false);
     }
@@ -89,26 +129,27 @@ export default function SuperAdmin() {
     return <LoadingSpinner />;
   }
 
-  // If the user is not an organizer, don't render the admin page
-  if (profile.role !== 'organizer') {
-    return (
-      <div className="p-6 flex flex-col items-center justify-center">
-        <ShieldCheck className="h-16 w-16 text-gray-400 mb-4" />
-        <h2 className="text-2xl font-bold mb-2 text-gray-700">Access Restricted</h2>
-        <p className="text-gray-600 mb-6">You don't have permission to access the admin area.</p>
-        <Button onClick={() => navigate('/dashboard')}>
-          Return to Dashboard
-        </Button>
-      </div>
-    );
+  // Redirect non-admin users
+  if (profile.role !== 'admin') {
+    return null;
   }
 
   return (
     <div className="p-6">
       <div className="mb-6">
         <h2 className="text-2xl font-bold mb-2">User Management</h2>
-        <p className="text-gray-600">Manage all users and their roles</p>
+        <p className="text-gray-600">Manage all users, their roles, and events</p>
       </div>
+
+      {serviceKeyMissing && (
+        <div className="bg-yellow-50 text-yellow-800 p-4 rounded-md mb-4 flex items-center">
+          <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0" />
+          <div>
+            <p className="font-semibold">Admin access unavailable</p>
+            <p className="text-sm">The Service Role Key is missing or invalid. Please add VITE_SUPABASE_SERVICE_ROLE_KEY to your environment variables and restart the application.</p>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
         <div className="relative flex items-center w-full md:w-1/3">
@@ -126,19 +167,27 @@ export default function SuperAdmin() {
           <div className="flex items-center gap-2">
             <Button 
               variant="outline" 
-              className="flex items-center gap-2"
-              onClick={() => setRoleFilter(roleFilter === 'all' ? 'visitor' : 'all')}
+              className={`flex items-center gap-2 ${roleFilter === 'visitor' ? 'bg-gray-100' : ''}`}
+              onClick={() => setRoleFilter(roleFilter === 'visitor' ? 'all' : 'visitor')}
             >
               <Filter className="h-4 w-4" />
-              {roleFilter === 'all' ? 'All Users' : roleFilter === 'visitor' ? 'Visitors' : 'Organizers'}
+              {roleFilter === 'visitor' ? 'Clear Filter' : 'Visitors'}
             </Button>
             <Button 
               variant="outline" 
-              className="flex items-center gap-2"
+              className={`flex items-center gap-2 ${roleFilter === 'organizer' ? 'bg-gray-100' : ''}`}
               onClick={() => setRoleFilter(roleFilter === 'organizer' ? 'all' : 'organizer')}
             >
               <Users className="h-4 w-4" />
-              {roleFilter === 'organizer' ? 'All Users' : 'Organizers'}
+              {roleFilter === 'organizer' ? 'Clear Filter' : 'Organizers'}
+            </Button>
+            <Button 
+              variant="outline" 
+              className={`flex items-center gap-2 ${roleFilter === 'admin' ? 'bg-gray-100' : ''}`}
+              onClick={() => setRoleFilter(roleFilter === 'admin' ? 'all' : 'admin')}
+            >
+              <ShieldCheck className="h-4 w-4" />
+              {roleFilter === 'admin' ? 'Clear Filter' : 'Admins'}
             </Button>
           </div>
           <Button 
@@ -172,13 +221,14 @@ export default function SuperAdmin() {
                   <Th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Email</Th>
                   <Th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Role</Th>
                   <Th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</Th>
+                  <Th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Events</Th>
                   <Th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</Th>
                 </Tr>
               </Thead>
               <Tbody>
                 {filteredUsers.length === 0 ? (
                   <Tr>
-                    <Td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                    <Td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                       {searchQuery ? 'No users found matching your search' : 'No users found'}
                     </Td>
                   </Tr>
@@ -207,7 +257,9 @@ export default function SuperAdmin() {
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                           user.role === 'organizer' 
                             ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-800'
+                            : user.role === 'admin' 
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-gray-100 text-gray-800'
                         }`}>
                           {user.role}
                         </span>
@@ -220,6 +272,12 @@ export default function SuperAdmin() {
                       <Td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(user.created_at).toLocaleDateString()}
                       </Td>
+                      <Td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span className="flex items-center">
+                          <Clock className="h-4 w-4 mr-1 text-blue-500" />
+                          {user.eventCount || 0}
+                        </span>
+                      </Td>
                       <Td className="px-6 py-4 whitespace-nowrap text-sm">
                         <UserDetailsDrawer
                           userId={user.user_id}
@@ -230,7 +288,7 @@ export default function SuperAdmin() {
                               className="text-gray-600 hover:text-blue-600"
                             >
                               <Eye className="h-4 w-4 mr-1" />
-                              View
+                              View Details
                             </Button>
                           }
                         />

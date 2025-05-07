@@ -12,7 +12,15 @@ export const RoleSwitch = () => {
     
     try {
       console.log('Current role:', profile.role);
-      const newRole: Role = profile.role === 'organizer' ? 'visitor' : 'organizer';
+      // Cycle through roles: organizer -> admin -> visitor -> organizer
+      let newRole: Role;
+      if (profile.role === 'organizer') {
+        newRole = 'admin';
+      } else if (profile.role === 'admin') {
+        newRole = 'visitor';
+      } else {
+        newRole = 'organizer';
+      }
       console.log('Switching to role:', newRole);
       await updateUserRole(newRole);
       console.log('Role switch successful');

@@ -25,9 +25,15 @@ export const Sidebar = ({ mobile, onClose }: SidebarProps) => {
   const { profile } = useAuth();
   
   // Check if the user has superadmin role
-  // Note: We're considering a user with role 'organizer' and custom attribute as superadmin
-  // This is just a placeholder - in a real app, you would have a specific superadmin role
-  const isSuperAdmin = profile?.role === 'organizer' && profile?.auth_id === 'superadmin';
+  // User with role 'organizer' or 'admin' can access superadmin
+  const isSuperAdmin = profile?.role === 'organizer' || profile?.role === 'admin';
+  
+  // Debug info - remove in production
+  console.log('Sidebar Profile:', { 
+    role: profile?.role, 
+    id: profile?.user_id,
+    canAccessAdmin: isSuperAdmin
+  });
 
   const handleItemClick = () => {
     if (mobile && onClose) {
@@ -71,8 +77,8 @@ export const Sidebar = ({ mobile, onClose }: SidebarProps) => {
       path: '/dashboard/help',
       icon: HelpCircle
     },
-    // Add SuperAdmin link (only visible to organizers)
-    ...(profile?.role === 'organizer' ? [{
+    // Always include SuperAdmin for organizers and admins
+    ...(isSuperAdmin ? [{
       name: 'Super Admin',
       path: '/dashboard/superadmin',
       icon: ShieldCheck

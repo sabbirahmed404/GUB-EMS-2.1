@@ -111,7 +111,6 @@ export default function ParticipantDashboard() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <h1 className="text-2xl font-semibold mb-6">Event Participation</h1>
 
       {/* Available Events Section */}
       <div className="mb-8">
