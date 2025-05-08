@@ -128,6 +128,7 @@ export function EventForm({ mode, initialData, onClose }: EventFormProps) {
             p_start_time: formData.start_time,
             p_end_date: formData.end_date,
             p_end_time: formData.end_time,
+            p_created_by: profile.user_id,
             p_team_id: null,
             p_organizer_name: formData.organizer_name,
             p_organizer_code: formData.organizer_code,
