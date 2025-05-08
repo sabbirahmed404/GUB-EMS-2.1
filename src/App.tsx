@@ -50,10 +50,16 @@ function ViewportFixer() {
   useEffect(() => {
     // Function to update viewport height CSS variable
     const updateViewportHeight = () => {
-      // Get the viewport height
+      // Get the viewport height more accurately for mobile
       const vh = window.innerHeight * 0.01;
-      // Set the --vh CSS variable
+      // Set the --vh CSS variable with a slight adjustment to prevent content from being pushed too high
       document.documentElement.style.setProperty('--vh', `${vh}px`);
+      
+      // Add a small delay to account for browser UI elements in PWA mode
+      setTimeout(() => {
+        const adjustedVh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty('--vh', `${adjustedVh}px`);
+      }, 100);
     };
 
     // Initial call
@@ -62,6 +68,13 @@ function ViewportFixer() {
     // Update on window resize and orientation change
     window.addEventListener('resize', updateViewportHeight);
     window.addEventListener('orientationchange', updateViewportHeight);
+    
+    // Also update when page becomes visible again (useful for PWAs)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        updateViewportHeight();
+      }
+    });
 
     // Fix for Safari bouncing effect
     document.body.addEventListener('touchmove', function(e) {
@@ -73,6 +86,7 @@ function ViewportFixer() {
     return () => {
       window.removeEventListener('resize', updateViewportHeight);
       window.removeEventListener('orientationchange', updateViewportHeight);
+      document.removeEventListener('visibilitychange', () => {});
       document.body.removeEventListener('touchmove', function(e) {
         if (e.target === document.body) {
           e.preventDefault();

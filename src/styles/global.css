@@ -129,9 +129,12 @@ html, body {
     min-height: -webkit-fill-available;
     height: 100%;
     height: -webkit-fill-available;
-    /* Fix for the 10px white space at bottom */
-    margin-bottom: 0 !important;
-    padding-bottom: env(safe-area-inset-bottom, 0) !important;
+    /* Adjust bottom spacing instead of removing it completely */
+    margin-bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    /* Ensure proper vertical content distribution */
+    display: flex;
+    flex-direction: column;
   }
   
   #root {
@@ -142,6 +145,8 @@ html, body {
     -webkit-overflow-scrolling: touch;
     display: flex;
     flex-direction: column;
+    /* Add proper vertical alignment instead of stretching */
+    justify-content: space-between;
   }
   
   /* Ensure content fills the viewport properly */
@@ -149,11 +154,19 @@ html, body {
     min-height: 100vh;
     min-height: -webkit-fill-available;
     height: 100%;
+    /* Add more natural spacing */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
   }
   
-  /* Fix for PWA viewport issues */
+  /* Fix for PWA viewport issues - adjust to prevent shifting upward too much */
   main, .flex-grow {
     flex: 1 0 auto;
     min-height: 0;
+    display: flex;
+    flex-direction: column;
+    /* Distribute space more naturally */
+    justify-content: space-between;
   }
 } 
