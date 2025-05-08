@@ -259,9 +259,9 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right Column - Event Image Slideshow */}
-          <div className="hidden md:block">
-            <div className="rounded-xl overflow-hidden shadow-2xl transform hover:scale-[1.02] transition-transform duration-500 relative h-[340px]">
+          {/* Right Column - Event Image Slideshow - Now visible on mobile too */}
+          <div className="mt-6 md:mt-0">
+            <div className="rounded-xl overflow-hidden shadow-2xl transform hover:scale-[1.02] transition-transform duration-500 relative h-[200px] md:h-[340px]">
               {eventImages.map((image, index) => (
                 <img 
                   key={index}
