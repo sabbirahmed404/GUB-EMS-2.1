@@ -158,7 +158,23 @@ body:not([data-route="/"]) nav {
   /* Ensure content has enough height to scroll */
   html, body {
     min-height: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
     scroll-behavior: smooth;
+    /* Fix for the mobile PWA 10px gap issue */
+    overflow-x: hidden;
+    position: relative;
+  }
+  
+  /* Fix for root container to fill entire viewport */
+  #root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    margin: 0;
+    padding: 0;
   }
 }
 

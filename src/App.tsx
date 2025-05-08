@@ -45,6 +45,45 @@ function RouteTracker() {
   return null;
 }
 
+// Helper component to fix viewport height issues on mobile
+function ViewportFixer() {
+  useEffect(() => {
+    // Function to update viewport height CSS variable
+    const updateViewportHeight = () => {
+      // Get the viewport height
+      const vh = window.innerHeight * 0.01;
+      // Set the --vh CSS variable
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+
+    // Initial call
+    updateViewportHeight();
+
+    // Update on window resize and orientation change
+    window.addEventListener('resize', updateViewportHeight);
+    window.addEventListener('orientationchange', updateViewportHeight);
+
+    // Fix for Safari bouncing effect
+    document.body.addEventListener('touchmove', function(e) {
+      if (e.target === document.body) {
+        e.preventDefault();
+      }
+    }, { passive: false });
+
+    return () => {
+      window.removeEventListener('resize', updateViewportHeight);
+      window.removeEventListener('orientationchange', updateViewportHeight);
+      document.body.removeEventListener('touchmove', function(e) {
+        if (e.target === document.body) {
+          e.preventDefault();
+        }
+      });
+    };
+  }, []);
+
+  return null;
+}
+
 // Public layout component
 function PublicLayout() {
   useEffect(() => {
@@ -151,6 +190,7 @@ function App() {
       <CacheProvider>
         <Router>
           <RouteTracker />
+          <ViewportFixer />
           <Routes>
             {/* Auth routes */}
             <Route element={<AuthRedirect><Outlet /></AuthRedirect>}>

@@ -121,16 +121,39 @@ html, body {
   overflow-y: auto;
 }
 
-/* iOS Safari body scroll bug fix - modified to prevent 10px shift */
+/* iOS Safari body scroll bug fix - updated to prevent the 10px shift */
 @supports (-webkit-touch-callout: none) {
   body {
     /* iOS specific rules */
+    min-height: 100%;
+    min-height: -webkit-fill-available;
+    height: 100%;
     height: -webkit-fill-available;
+    /* Fix for the 10px white space at bottom */
+    margin-bottom: 0 !important;
+    padding-bottom: env(safe-area-inset-bottom, 0) !important;
   }
   
   #root {
     height: 100%;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  /* Ensure content fills the viewport properly */
+  .mobile-full-height {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    height: 100%;
+  }
+  
+  /* Fix for PWA viewport issues */
+  main, .flex-grow {
+    flex: 1 0 auto;
+    min-height: 0;
   }
 } 
