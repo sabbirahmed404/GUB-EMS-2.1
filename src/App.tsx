@@ -81,23 +81,10 @@ function ViewportFixer() {
       }
     });
     
-    // Disable pull-to-refresh on mobile which can cause layout issues
-    document.body.addEventListener('touchmove', function(e) {
-      // Only block pull-to-refresh movements
-      if (window.scrollY === 0 && e.touches[0].screenY > 0) {
-        e.preventDefault();
-      }
-    }, { passive: false });
-
     return () => {
       window.removeEventListener('resize', updateViewportHeight);
       window.removeEventListener('orientationchange', () => {});
       document.removeEventListener('visibilitychange', () => {});
-      document.body.removeEventListener('touchmove', function(e) {
-        if (window.scrollY === 0 && e.touches[0].screenY > 0) {
-          e.preventDefault();
-        }
-      });
     };
   }, []);
 
