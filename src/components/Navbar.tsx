@@ -63,18 +63,17 @@ export default function Navbar() {
   return (
     <>
       <nav 
-        className="fixed top-0 left-0 right-0 z-[100] px-4 md:px-8 transition-all duration-300 scrolled-nav"
+        className="fixed top-0 left-0 right-0 z-[100] transition-all duration-300 scrolled-nav"
         style={{
           width: '100vw',
           background: `linear-gradient(to right, ${colors.navGradientStart}, ${colors.navGradientEnd})`,
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
           boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
-          padding: '0.5rem 0',
-          borderBottom: '1px solid rgba(255,255,255,0.2)',
+          borderBottom: '1px solid rgba(255,255,255,0.2)'
         }}
       >
-        <div className="max-w-7xl mx-auto relative">
+        <div className="max-w-7xl mx-auto relative px-4 md:px-8 py-3">
           <div className="flex justify-between items-center">
             <Link 
               to="/" 

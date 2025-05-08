@@ -130,7 +130,7 @@ export default function EventDetailPage() {
       </div>
     );
   }
-
+  
   if (error || !event) {
     return (
       <div className="min-h-screen py-12">
@@ -175,6 +175,8 @@ export default function EventDetailPage() {
       </Dialog>
 
       <div className="max-w-5xl mx-auto px-4">
+                      {/* Add bottom padding */}
+                      <div className="pb-[55px]"></div>
         <Button 
           onClick={() => navigate('/events')}
           variant="ghost" 

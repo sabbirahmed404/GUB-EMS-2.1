@@ -116,43 +116,39 @@ export default function Home() {
         setFeaturedEvents(featuredEventsList.slice(0, 3));
         setUpcomingEvents(upcoming);
         
-        // Fetch event organizers
-        const { data: creatorsData, error: creatorsError } = await supabase
+        // Fetch all event organizers (users with 'organizer' role)
+        const { data: organizersData, error: organizersError } = await supabase
+          .from('users')
+          .select('user_id, full_name, club, club_position, avatar_url')
+          .eq('role', 'organizer');
+        
+        if (organizersError) throw organizersError;
+        
+        console.log('All organizers data:', organizersData);
+        
+        // Count events per organizer
+        const { data: eventCreators, error: eventCreatorsError } = await supabase
           .from('events')
           .select('created_by, organizer_name')
           .not('created_by', 'is', null);
+          
+        if (eventCreatorsError) throw eventCreatorsError;
         
-        if (creatorsError) throw creatorsError;
-        
-        // Count events per organizer
-        const organizerCounts = creatorsData.reduce((acc, event) => {
+        const organizerCounts = eventCreators.reduce((acc, event) => {
           if (event.created_by) {
             acc[event.created_by] = (acc[event.created_by] || 0) + 1;
           }
           return acc;
         }, {} as Record<string, number>);
         
-        // Get top organizers
-        const topOrganizerIds = Object.keys(organizerCounts)
-          .sort((a, b) => organizerCounts[b] - organizerCounts[a])
-          .slice(0, 4);
+        // Add event count to each organizer
+        const enrichedOrganizers = organizersData.map(org => ({
+          ...org,
+          eventCount: organizerCounts[org.user_id] || 0
+        }));
         
-        if (topOrganizerIds.length > 0) {
-          const { data: organizersData, error: organizersError } = await supabase
-            .from('users')
-            .select('user_id, full_name, club, club_position, avatar_url')
-            .in('user_id', topOrganizerIds);
-          
-          if (organizersError) throw organizersError;
-          
-          // Add event count to each organizer
-          const enrichedOrganizers = organizersData.map(org => ({
-            ...org,
-            eventCount: organizerCounts[org.user_id] || 0
-          }));
-          
-          setOrganizers(enrichedOrganizers);
-        }
+        console.log('Enriched organizers:', enrichedOrganizers);
+        setOrganizers(enrichedOrganizers);
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -487,7 +483,7 @@ export default function Home() {
               Top Organizers
             </h2>
             <Link 
-              to="/organizers" 
+              to="/coming-soon" 
               className="px-4 py-2 rounded-lg flex items-center gap-1 transition-all hover:bg-white"
               style={{ color: colors.primary }}
             >
@@ -501,33 +497,36 @@ export default function Home() {
                 <div key={index} className="animate-pulse bg-white rounded-lg shadow-md h-48"></div>
               ))
             ) : organizers.length > 0 ? (
-              organizers.map(organizer => (
-                <div 
-                  key={organizer.user_id} 
-                  className="bg-white rounded-lg shadow-md p-6 transition-all duration-300 hover:shadow-xl text-center"
-                >
-                  <div className="inline-block rounded-full p-1 mb-4" style={{ backgroundColor: colors.lighter }}>
-                    <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200">
-                      {organizer.avatar_url ? (
-                        <img src={organizer.avatar_url} alt={organizer.full_name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-2xl font-bold" style={{ backgroundColor: colors.tertiary, color: 'white' }}>
-                          {organizer.full_name.charAt(0)}
-                        </div>
-                      )}
+              organizers.map(organizer => {
+                console.log('Rendering organizer:', organizer);
+                return (
+                  <div 
+                    key={organizer.user_id} 
+                    className="bg-white rounded-lg shadow-md p-6 transition-all duration-300 hover:shadow-xl text-center"
+                  >
+                    <div className="inline-block rounded-full p-1 mb-4" style={{ backgroundColor: colors.lighter }}>
+                      <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-200">
+                        {organizer.avatar_url ? (
+                          <img src={organizer.avatar_url} alt={organizer.full_name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-2xl font-bold" style={{ backgroundColor: colors.tertiary, color: 'white' }}>
+                            {organizer.full_name.charAt(0)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <h3 className="text-lg font-semibold" style={{ color: colors.primary }}>{organizer.full_name}</h3>
+                    <p className="text-sm mb-2" style={{ color: colors.tertiary }}>
+                      {organizer.club_position ? `${organizer.club_position}` : ''}
+                      {organizer.club && organizer.club_position ? ' at ' : ''}
+                      {organizer.club ? organizer.club : 'Event Organizer'}
+                    </p>
+                    <div className="text-sm font-medium rounded-full py-1 px-3 inline-block" style={{ backgroundColor: colors.lightest, color: colors.secondary }}>
+                      {organizer.eventCount} Event{organizer.eventCount !== 1 ? 's' : ''}
                     </div>
                   </div>
-                  <h3 className="text-lg font-semibold" style={{ color: colors.primary }}>{organizer.full_name}</h3>
-                  <p className="text-sm mb-2" style={{ color: colors.tertiary }}>
-                    {organizer.club_position ? `${organizer.club_position}` : ''}
-                    {organizer.club && organizer.club_position ? ' at ' : ''}
-                    {organizer.club ? organizer.club : 'Event Organizer'}
-                  </p>
-                  <div className="text-sm font-medium rounded-full py-1 px-3 inline-block" style={{ backgroundColor: colors.lightest, color: colors.secondary }}>
-                    {organizer.eventCount} Event{organizer.eventCount !== 1 ? 's' : ''}
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <p className="col-span-4 text-center text-lg text-gray-500">No organizers data available.</p>
             )}

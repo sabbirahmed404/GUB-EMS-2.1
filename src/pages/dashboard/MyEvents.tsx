@@ -3,6 +3,7 @@ import UserEventTable from '../../components/events/UserEventTable';
 import { Button } from '../../components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { DashboardAnalytics } from '../../components/dashboard/DashboardAnalytics';
 
 export default function MyEvents() {
   const { profile } = useAuth();
@@ -28,6 +29,11 @@ export default function MyEvents() {
           </Button>
         </div>
       )}
+      
+      <div className="mb-6">
+        <DashboardAnalytics />
+      </div>
+      
       <div>
         <UserEventTable />
       </div>

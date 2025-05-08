@@ -92,6 +92,8 @@ export default function Events() {
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-7xl mx-auto px-4">
+                    {/* Add bottom padding */}
+                    <div className="pb-[50px]"></div>
         <h1 className="text-3xl font-bold mb-2">Available Events</h1>
         <p className="text-gray-600 mb-8">
           Browse and register for upcoming events at Green University of Bangladesh

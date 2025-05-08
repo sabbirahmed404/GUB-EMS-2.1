@@ -11,6 +11,7 @@ import About from './pages/About';
 import Dashboard from './pages/Dashboard';
 import MyEvents from './pages/dashboard/MyEvents';
 import { TestAuthPage } from './pages/Auth/TestAuthPage';
+import LoginPage from './pages/Auth/LoginPage';
 import EventCreatePage from './pages/Events/EventCreatePage';
 import AllEvents from './pages/dashboard/AllEvents';
 import EventUpdatePage from './pages/Events/EventUpdatePage';
@@ -19,11 +20,10 @@ import RegistrationDashboard from './pages/Participants/RegistrationDashboard';
 import ParticipantsList from './pages/Participants/ParticipantsList'; 
 import { CacheProvider } from './contexts/CacheContext';
 import { useAuth } from './contexts/AuthContext';
-import TeamsDashboard from './pages/Teams/TeamsDashboard';
-import PlanningDashboard from './pages/Planning/PlanningDashboard';
 import HelpCenter from './pages/Help/HelpCenter';
 import SuperAdmin from './pages/dashboard/SuperAdmin';
 import OrganizersList from './pages/Organizers/OrganizersList';
+import ComingSoon from './pages/ComingSoon';
 import NotFound from './pages/NotFound';
 import { toast } from 'sonner';
 import VisitorRedirect from './components/VisitorRedirect';
@@ -155,6 +155,7 @@ function App() {
             {/* Auth routes */}
             <Route element={<AuthRedirect><Outlet /></AuthRedirect>}>
               <Route path="/login" element={<TestAuthPage />} />
+              <Route path="/auth/login" element={<LoginPage />} />
               <Route path="/test-auth" element={<Navigate to="/login" replace />} />
             </Route>
 
@@ -180,8 +181,6 @@ function App() {
                 {/* Routes accessible only to non-visitors (organizer and admin) */}
                 <Route element={<NonVisitorRoute />}>
                   <Route path="participants" element={<ParticipantsList />} />
-                  <Route path="team" element={<TeamsDashboard />} />
-                  <Route path="planning" element={<PlanningDashboard />} />
                   <Route path="events/create" element={<EventCreatePage />} />
                   <Route path="events/:eid/edit" element={<EventUpdatePage />} />
                 </Route>
@@ -208,6 +207,7 @@ function App() {
               <Route path="/events" element={<Events />} />
               <Route path="/events/:eid" element={<EventDetailPage />} />
               <Route path="/about" element={<About />} />
+              <Route path="/coming-soon" element={<ComingSoon />} />
             </Route>
 
             {/* Catch all route - show 404 */}

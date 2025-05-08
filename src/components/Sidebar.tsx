@@ -63,22 +63,12 @@ export const Sidebar = ({ mobile, onClose }: SidebarProps) => {
       path: '/dashboard/registrations',
       icon: UserPlus
     },
-    // Hide Participants, Team and Planning pages from visitors
+    // Hide Participants from visitors
     ...(!isVisitor ? [
       {
         name: 'Participants',
         path: '/dashboard/participants',
         icon: Users
-      },
-      {
-        name: 'Team',
-        path: '/dashboard/team',
-        icon: UserPlus
-      },
-      {
-        name: 'Planning',
-        path: '/dashboard/planning',
-        icon: Plane
       }
     ] : []),
     // Add Organizers page for all users
