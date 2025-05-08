@@ -9,6 +9,7 @@ import { Info, Edit, X, Loader } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Dialog } from '@headlessui/react';
 import { EventForm } from './EventForm';
+import { toast } from 'sonner';
 
 interface Event {
   event_id: string;
@@ -105,6 +106,12 @@ export const EventTable = ({ filter, searchQuery }: EventTableProps) => {
   }, [user, profile, authLoading, filter, searchQuery, sortField, sortDirection, navigate]);
 
   const handleEdit = async (eventId: string) => {
+    // Check if user is allowed to edit (must not be a visitor)
+    if (profile?.role === 'visitor') {
+      toast.error("Visitors cannot edit events");
+      return;
+    }
+    
     console.log("Edit button clicked for event:", eventId);
     setLoadingEdit(true);
     setEditEventId(eventId);
@@ -193,6 +200,9 @@ export const EventTable = ({ filter, searchQuery }: EventTableProps) => {
     );
   }
 
+  // Check if the user can edit events (not a visitor)
+  const canEditEvents = profile?.role !== 'visitor';
+
   return (
     <div className="bg-white shadow-md rounded-lg overflow-hidden border border-blue-100">
       <div className="overflow-x-auto min-w-full">
@@ -272,15 +282,17 @@ export const EventTable = ({ filter, searchQuery }: EventTableProps) => {
                         </Button>
                       }
                     />
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="text-green-600 hover:bg-green-50 border-green-200"
-                      onClick={() => handleEdit(event.event_id)}
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
+                    {canEditEvents && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-green-600 hover:bg-green-50 border-green-200"
+                        onClick={() => handleEdit(event.event_id)}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Button>
+                    )}
                   </div>
                 </Td>
               </Tr>

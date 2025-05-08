@@ -43,7 +43,7 @@ const DrawerContent = React.forwardRef<
     <DrawerPrimitive.Content
       ref={ref}
       className={cn(
-        "bg-[hsl(var(--background))] fixed z-50 outline-none",
+        "bg-[hsl(var(--background))] fixed z-50 outline-none overflow-y-auto",
         {
           "inset-y-0 right-0 h-full w-3/4 sm:max-w-sm border-l": direction === "right",
           "inset-y-0 left-0 h-full w-3/4 sm:max-w-sm border-r": direction === "left",

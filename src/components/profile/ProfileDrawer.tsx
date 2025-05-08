@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { UserCircle, Edit2, LogOut, X, Search } from "lucide-react";
+import { UserCircle, Edit2, LogOut, X, Search, Loader2 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
@@ -66,7 +66,7 @@ const POSITIONS = [
 ];
 
 export function ProfileDrawer({ open, onOpenChange }: ProfileDrawerProps) {
-  const { profile, user } = useAuth();
+  const { profile, user, updateUserProfile } = useAuth();
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -88,6 +88,19 @@ export function ProfileDrawer({ open, onOpenChange }: ProfileDrawerProps) {
     club: profile?.club || "",
     club_position: profile?.club_position || ""
   });
+  
+  // Update form data when profile changes
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        full_name: profile.full_name || "",
+        role_in_institute: profile.role_in_institute || "",
+        description: profile.description || "",
+        club: profile.club || "",
+        club_position: profile.club_position || ""
+      });
+    }
+  }, [profile]);
   
   // Filter clubs based on search
   const filteredClubs = CLUBS.filter(club => 
@@ -179,24 +192,18 @@ export function ProfileDrawer({ open, onOpenChange }: ProfileDrawerProps) {
     try {
       setLoading(true);
       
-      const { error } = await supabase
-        .from('users')
-        .update({
-          full_name: formData.full_name,
-          role_in_institute: formData.role_in_institute,
-          description: formData.description,
-          club: formData.club,
-          club_position: formData.club_position,
-          updated_at: new Date().toISOString()
-        })
-        .eq('auth_id', user.id);
+      const updatedProfile = {
+        full_name: formData.full_name,
+        role_in_institute: formData.role_in_institute,
+        description: formData.description,
+        club: formData.club,
+        club_position: formData.club_position
+      };
       
-      if (error) throw error;
+      await updateUserProfile(updatedProfile);
       
       toast.success("Profile updated successfully");
       setIsEditing(false);
-      // Force reload to get updated profile
-      window.location.reload();
     } catch (err) {
       console.error('Error updating profile:', err);
       toast.error("Failed to update profile");
@@ -207,8 +214,8 @@ export function ProfileDrawer({ open, onOpenChange }: ProfileDrawerProps) {
   
   return (
     <Drawer open={open} onOpenChange={onOpenChange} direction="right">
-      <DrawerContent className="h-full max-w-md w-full rounded-l-lg bg-[hsl(var(--background))] border-l border-[hsl(var(--border))]">
-        <DrawerHeader className="p-4 border-b bg-[hsl(var(--background))]">
+      <DrawerContent className="h-full max-w-md w-full rounded-l-lg border-l">
+        <DrawerHeader className="p-4 border-b">
           <div className="flex items-center justify-between">
             <DrawerTitle className="text-xl font-semibold">My Profile</DrawerTitle>
             <DrawerClose className="rounded-full p-2 hover:bg-gray-100">
@@ -217,7 +224,7 @@ export function ProfileDrawer({ open, onOpenChange }: ProfileDrawerProps) {
           </div>
         </DrawerHeader>
         
-        <div className="p-6 flex-1 overflow-y-auto bg-[hsl(var(--background))]">
+        <div className="p-6 flex-1 overflow-y-auto">
           {!isEditing ? (
             <div className="space-y-6">
               <div className="flex flex-col items-center space-y-3">
@@ -314,13 +321,13 @@ export function ProfileDrawer({ open, onOpenChange }: ProfileDrawerProps) {
                     value={formData.role_in_institute}
                     onValueChange={(value) => handleSelectChange("role_in_institute", value)}
                   >
-                    <SelectTrigger className="bg-[hsl(var(--background))]">
+                    <SelectTrigger>
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>
-                    <SelectContent className="bg-[hsl(var(--background))]">
+                    <SelectContent className="z-[100]">
                       <SelectItem value="Student">Student</SelectItem>
                       <SelectItem value="Staff">Staff</SelectItem>
-                      <SelectItem value="Teacher">Teacher</SelectItem>
+                      <SelectItem value="Faculty">Faculty</SelectItem>
                       <SelectItem value="Other">Other</SelectItem>
                     </SelectContent>
                   </Select>
@@ -346,88 +353,82 @@ export function ProfileDrawer({ open, onOpenChange }: ProfileDrawerProps) {
                   </div>
                 )}
                 
-                <div className="space-y-2 relative" ref={clubInputRef}>
+                <div className="space-y-2 relative">
                   <Label htmlFor="club">Club Associated With</Label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Search className="h-4 w-4 text-gray-400" />
-                    </div>
+                  <div className="relative" ref={clubInputRef}>
                     <Input
                       id="club"
                       name="club"
                       value={formData.club}
-                      onChange={handleChange}
-                      placeholder="Search for a club"
-                      className="pl-10"
+                      onChange={(e) => {
+                        handleChange(e);
+                        setClubSearch(e.target.value);
+                        setShowClubDropdown(true);
+                      }}
                       onFocus={() => setShowClubDropdown(true)}
+                      autoComplete="off"
+                      placeholder="Start typing to search clubs"
                     />
+                    {showClubDropdown && (
+                      <div className="absolute mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                        {filteredClubs.length > 0 ? (
+                          filteredClubs.map((club) => (
+                            <div
+                              key={club}
+                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                              onClick={() => {
+                                setFormData({ ...formData, club });
+                                setShowClubDropdown(false);
+                              }}
+                            >
+                              {club}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-4 py-2 text-gray-500">No clubs found</div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  {showClubDropdown && (
-                    <div className="absolute z-10 mt-1 w-full bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {filteredClubs.length > 0 ? (
-                        filteredClubs.map((club) => (
-                          <div
-                            key={club}
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                            onClick={() => handleClubSelect(club)}
-                          >
-                            {club}
-                          </div>
-                        ))
-                      ) : clubSearch ? (
-                        <div 
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 italic"
-                          onClick={() => handleClubSelect(clubSearch)}
-                        >
-                          Use "{clubSearch}"
-                        </div>
-                      ) : (
-                        <div className="px-4 py-2 text-gray-500">No clubs found</div>
-                      )}
-                    </div>
-                  )}
                 </div>
                 
-                <div className="space-y-2 relative" ref={positionInputRef}>
+                <div className="space-y-2 relative">
                   <Label htmlFor="club_position">Club Position</Label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Search className="h-4 w-4 text-gray-400" />
-                    </div>
+                  <div className="relative" ref={positionInputRef}>
                     <Input
                       id="club_position"
                       name="club_position"
                       value={formData.club_position}
-                      onChange={handleChange}
-                      placeholder="Search for a position"
-                      className="pl-10"
+                      onChange={(e) => {
+                        handleChange(e);
+                        setPositionSearch(e.target.value);
+                        setShowPositionDropdown(true);
+                      }}
                       onFocus={() => setShowPositionDropdown(true)}
+                      autoComplete="off"
+                      placeholder="Start typing to search positions"
                     />
+                    {showPositionDropdown && (
+                      <div className="absolute mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+                        {filteredPositions.length > 0 ? (
+                          filteredPositions.map((position) => (
+                            <div
+                              key={position}
+                              className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                              onClick={() => {
+                                setFormData({ ...formData, club_position: position });
+                                setShowPositionDropdown(false);
+                              }}
+                            >
+                              {position}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="px-4 py-2 text-gray-500">No positions found</div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  {showPositionDropdown && (
-                    <div className="absolute z-10 mt-1 w-full bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                      {filteredPositions.length > 0 ? (
-                        filteredPositions.map((position) => (
-                          <div
-                            key={position}
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                            onClick={() => handlePositionSelect(position)}
-                          >
-                            {position}
-                          </div>
-                        ))
-                      ) : positionSearch ? (
-                        <div 
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-gray-700 italic"
-                          onClick={() => handlePositionSelect(positionSearch)}
-                        >
-                          Use "{positionSearch}"
-                        </div>
-                      ) : (
-                        <div className="px-4 py-2 text-gray-500">No positions found</div>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
               
@@ -437,7 +438,12 @@ export function ProfileDrawer({ open, onOpenChange }: ProfileDrawerProps) {
                   className="flex-1 text-white"
                   disabled={loading}
                 >
-                  {loading ? "Saving..." : "Save Changes"}
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : "Save Changes"}
                 </Button>
                 <Button 
                   type="button" 

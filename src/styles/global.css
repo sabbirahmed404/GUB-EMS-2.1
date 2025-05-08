@@ -61,6 +61,7 @@
   position: relative;
 }
 
+/* Removing the green line accent
 .dashboard-accent-top::before {
   content: '';
   position: absolute;
@@ -71,6 +72,7 @@
   background: linear-gradient(to right, #00b4d8, #0077b6, #00b4d8);
   border-radius: 0 0 3px 3px;
 }
+*/
 
 /* Subtle blue shadow */
 .blue-shadow {
@@ -111,6 +113,11 @@ html, body {
 .mobile-dialog {
   max-height: 90vh;
   max-height: calc(var(--vh, 1vh) * 90);
+  overflow-y: auto;
+}
+
+/* Make drawers scrollable */
+[role="dialog"] .h-full {
   overflow-y: auto;
 }
 

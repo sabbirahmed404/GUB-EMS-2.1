@@ -107,32 +107,36 @@ export function UserDetailsDrawer({ userId, trigger }: UserDetailsDrawerProps) {
 
       if (eventsError) throw eventsError;
 
-      // Fetch events where user is a participant
+      // Fetch events where user is a participant using our new function
+      console.log('Fetching user participated events with ID:', userId);
       const { data: participatedData, error: participatedError } = await adminSupabase
-        .from('participants')
-        .select(`
-          status,
-          event:events (
-            event_id,
-            event_name,
-            organizer_name,
-            start_date,
-            end_date
-          )
-        `)
-        .eq('user_id', userId);
+        .rpc('get_user_participated_events', { 
+          user_id_param: userId 
+        });
 
-      if (participatedError) throw participatedError;
+      if (participatedError) {
+        console.error('Error fetching participated events:', participatedError);
+        console.error('Error details:', participatedError.details);
+        console.error('Error message:', participatedError.message);
+        throw participatedError;
+      }
 
       // Transform the participatedData to match our interface
-      const transformedParticipatedData = participatedData?.map(item => ({
+      const transformedParticipatedData = participatedData?.map((item: {
+        status: string;
+        event_id: string;
+        event_name: string;
+        organizer_name: string;
+        start_date: string;
+        end_date: string;
+      }) => ({
         status: item.status,
-        event: Array.isArray(item.event) && item.event[0] ? item.event[0] : {
-          event_id: '',
-          event_name: 'Unknown Event',
-          organizer_name: '',
-          start_date: '',
-          end_date: ''
+        event: {
+          event_id: item.event_id,
+          event_name: item.event_name,
+          organizer_name: item.organizer_name,
+          start_date: item.start_date,
+          end_date: item.end_date
         }
       })) || [];
 
@@ -225,7 +229,7 @@ export function UserDetailsDrawer({ userId, trigger }: UserDetailsDrawerProps) {
       setUser(prev => prev ? { 
         ...prev, 
         role: newRole, 
-        organizer_code: newRole === 'organizer' ? organizerCode : null 
+        organizer_code: newRole === 'organizer' ? organizerCode : undefined
       } : null);
       toast.success(`User role updated to ${newRole}`);
       
@@ -308,7 +312,7 @@ export function UserDetailsDrawer({ userId, trigger }: UserDetailsDrawerProps) {
             <DrawerHeader className="p-4 border-b">
               <div className="flex items-center justify-between">
                 <DrawerTitle className="text-xl font-semibold">User Details</DrawerTitle>
-                <DrawerClose className="rounded-full p-2 hover:bg-gray-100">
+                <DrawerClose className="rounded-full p-2 hover:bg-gray-100 mt-2">
                   <X className="h-5 w-5" />
                 </DrawerClose>
               </div>

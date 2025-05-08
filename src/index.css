@@ -161,3 +161,15 @@ body:not([data-route="/"]) nav {
     scroll-behavior: smooth;
   }
 }
+
+/* Hide scrollbar for landing page */
+body[data-route="/"] {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+body[data-route="/"] ::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+  width: 0;
+  height: 0;
+}

@@ -290,6 +290,9 @@ export function VenueSelect({ value, onChange, startDate, startTime, endDate, en
   // Get the selected main venue object
   const selectedMainVenue = VENUES.find(v => v.id === selectedMain);
 
+  // Consistent select styles
+  const selectClass = "mt-1 block w-full rounded-md bg-gray-100 shadow-sm border-gray-300 focus:border-blue-400 focus:ring-blue-400 focus:bg-white transition-colors";
+
   return (
     <div className="space-y-3">
       <div>
@@ -300,7 +303,7 @@ export function VenueSelect({ value, onChange, startDate, startTime, endDate, en
           id="main-venue"
           value={selectedMain}
           onChange={handleMainVenueChange}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+          className={selectClass}
           disabled={isLoading}
         >
           <option value="">Select a venue</option>
@@ -326,7 +329,7 @@ export function VenueSelect({ value, onChange, startDate, startTime, endDate, en
             id="sub-venue"
             value={selectedSub}
             onChange={handleSubVenueChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+            className={selectClass}
             disabled={isLoading}
           >
             <option value="">Select a room</option>

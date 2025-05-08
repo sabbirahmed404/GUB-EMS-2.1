@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Suspense, useEffect } from 'react';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -9,7 +9,7 @@ import Home from './pages/Home';
 import Events from './pages/Events';
 import About from './pages/About';
 import Dashboard from './pages/Dashboard';
-import Overview from './pages/dashboard/Overview';
+import MyEvents from './pages/dashboard/MyEvents';
 import { TestAuthPage } from './pages/Auth/TestAuthPage';
 import EventCreatePage from './pages/Events/EventCreatePage';
 import AllEvents from './pages/dashboard/AllEvents';
@@ -23,8 +23,27 @@ import TeamsDashboard from './pages/Teams/TeamsDashboard';
 import PlanningDashboard from './pages/Planning/PlanningDashboard';
 import HelpCenter from './pages/Help/HelpCenter';
 import SuperAdmin from './pages/dashboard/SuperAdmin';
+import OrganizersList from './pages/Organizers/OrganizersList';
 import NotFound from './pages/NotFound';
 import { toast } from 'sonner';
+import VisitorRedirect from './components/VisitorRedirect';
+
+// Route tracker component to set data-route attribute on body
+function RouteTracker() {
+  const location = useLocation();
+  
+  useEffect(() => {
+    // Set the data-route attribute on the body element
+    document.body.setAttribute('data-route', location.pathname);
+    
+    return () => {
+      // Clean up when component unmounts
+      document.body.removeAttribute('data-route');
+    };
+  }, [location.pathname]);
+  
+  return null;
+}
 
 // Public layout component
 function PublicLayout() {
@@ -103,11 +122,35 @@ function SuperAdminRoute() {
   return <Outlet />;
 }
 
+// Role-based access control for non-visitor routes (organizer or admin)
+function NonVisitorRoute() {
+  const { profile, loading } = useAuth();
+  
+  // Debug information
+  console.log('NonVisitorRoute check:', {
+    role: profile?.role,
+    loading,
+    canAccess: profile?.role !== 'visitor'
+  });
+  
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+  
+  if (!profile || profile.role === 'visitor') {
+    toast.error("Access denied. Visitors cannot access this page.");
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return <Outlet />;
+}
+
 function App() {
   return (
     <AuthProvider>
       <CacheProvider>
         <Router>
+          <RouteTracker />
           <Routes>
             {/* Auth routes */}
             <Route element={<AuthRedirect><Outlet /></AuthRedirect>}>
@@ -118,15 +161,30 @@ function App() {
             {/* Protected dashboard routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />}>
-                <Route index element={<Overview />} />
+                {/* My Events route only accessible to organizers and admins */}
+                <Route element={<NonVisitorRoute />}>
+                  <Route index element={<MyEvents />} />
+                </Route>
+                
+                {/* Fallback redirection for visitors */}
+                <Route path="" element={<VisitorRedirect />} />
+                
+                {/* Fallback for visitors who can't access My Events */}
+                <Route path="visitor" element={<AllEvents />} />
+                
                 <Route path="events" element={<AllEvents />} />
-                <Route path="events/create" element={<EventCreatePage />} />
-                <Route path="events/:eid/edit" element={<EventUpdatePage />} />
-                <Route path="participants" element={<ParticipantsList />} />
                 <Route path="registrations" element={<RegistrationDashboard />} />
-                <Route path="team" element={<TeamsDashboard />} />
-                <Route path="planning" element={<PlanningDashboard />} />
+                <Route path="organizers" element={<OrganizersList />} />
                 <Route path="help" element={<HelpCenter />} />
+                
+                {/* Routes accessible only to non-visitors (organizer and admin) */}
+                <Route element={<NonVisitorRoute />}>
+                  <Route path="participants" element={<ParticipantsList />} />
+                  <Route path="team" element={<TeamsDashboard />} />
+                  <Route path="planning" element={<PlanningDashboard />} />
+                  <Route path="events/create" element={<EventCreatePage />} />
+                  <Route path="events/:eid/edit" element={<EventUpdatePage />} />
+                </Route>
                 
                 {/* Admin routes with role protection (organizer or admin) */}
                 <Route element={<AdminRoute />}>

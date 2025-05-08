@@ -78,30 +78,42 @@ export default function Home() {
         
         if (eventsError) throw eventsError;
         
-        // Calculate which events are upcoming vs current/past
         const now = new Date();
+        
+        // Filter upcoming events - events that haven't started yet
         const upcoming = eventsData.filter(event => new Date(event.start_date) > now)
           .slice(0, 4);
         
-        // Choose featured events - either current events or recent past events if no current ones
-        const featured = eventsData
-          .filter(event => {
-            const startDate = new Date(event.start_date);
-            const endDate = new Date(event.end_date);
-            return startDate <= now && endDate >= now;
-          });
+        // Featured events - prioritize running events and upcoming events
+        const runningEvents = eventsData.filter(event => {
+          const startDate = new Date(event.start_date);
+          const endDate = new Date(event.end_date);
+          return startDate <= now && endDate >= now;
+        });
         
-        if (featured.length < 3) {
-          // Add some past events if not enough current ones
+        // Get some upcoming events if we don't have enough running events
+        let featuredEventsList = [...runningEvents];
+        
+        // If we have less than 3 running events, add some upcoming events
+        if (featuredEventsList.length < 3) {
+          const upcomingForFeatured = eventsData
+            .filter(event => new Date(event.start_date) > now)
+            .slice(0, 3 - featuredEventsList.length);
+          
+          featuredEventsList = [...featuredEventsList, ...upcomingForFeatured];
+        }
+        
+        // If we still have less than 3 events, add some past events
+        if (featuredEventsList.length < 3) {
           const pastEvents = eventsData
             .filter(event => new Date(event.end_date) < now)
             .sort((a, b) => new Date(b.end_date).getTime() - new Date(a.end_date).getTime())
-            .slice(0, 3 - featured.length);
+            .slice(0, 3 - featuredEventsList.length);
           
-          featured.push(...pastEvents);
+          featuredEventsList = [...featuredEventsList, ...pastEvents];
         }
         
-        setFeaturedEvents(featured.slice(0, 3));
+        setFeaturedEvents(featuredEventsList.slice(0, 3));
         setUpcomingEvents(upcoming);
         
         // Fetch event organizers
@@ -323,6 +335,38 @@ export default function Home() {
                         {event.event_name}
                       </div>
                     )}
+                    
+                    {/* Event status label */}
+                    <div className="absolute top-3 right-3">
+                      {(() => {
+                        const now = new Date();
+                        const startDate = new Date(event.start_date);
+                        const endDate = new Date(event.end_date);
+                        
+                        let labelText = '';
+                        let bgColor = '';
+                        
+                        if (startDate > now) {
+                          labelText = 'Upcoming';
+                          bgColor = colors.accent;
+                        } else if (startDate <= now && endDate >= now) {
+                          labelText = 'Running';
+                          bgColor = colors.primary;
+                        } else {
+                          labelText = 'Ended';
+                          bgColor = colors.tertiary;
+                        }
+                        
+                        return (
+                          <div 
+                            className="px-3 py-1 rounded-full text-white text-sm font-medium"
+                            style={{ backgroundColor: bgColor }}
+                          >
+                            {labelText}
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
                   <div className="p-6 flex-1 flex flex-col">
                     <h3 className="text-xl font-semibold mb-3" style={{ color: colors.primary }}>
@@ -522,6 +566,38 @@ export default function Home() {
                       <h3 className="text-2xl font-bold text-white">{selectedEvent.event_name}</h3>
                       <p className="text-white opacity-90">Organized by {selectedEvent.organizer_name}</p>
                     </div>
+                  </div>
+                  
+                  {/* Event status label */}
+                  <div className="absolute top-3 right-3">
+                    {(() => {
+                      const now = new Date();
+                      const startDate = new Date(selectedEvent.start_date);
+                      const endDate = new Date(selectedEvent.end_date);
+                      
+                      let labelText = '';
+                      let bgColor = '';
+                      
+                      if (startDate > now) {
+                        labelText = 'Upcoming';
+                        bgColor = colors.accent;
+                      } else if (startDate <= now && endDate >= now) {
+                        labelText = 'Running';
+                        bgColor = colors.primary;
+                      } else {
+                        labelText = 'Ended';
+                        bgColor = colors.tertiary;
+                      }
+                      
+                      return (
+                        <div 
+                          className="px-3 py-1 rounded-full text-white text-sm font-medium"
+                          style={{ backgroundColor: bgColor }}
+                        >
+                          {labelText}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
                 

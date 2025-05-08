@@ -9,7 +9,8 @@ import {
   HelpCircle,
   Menu,
   X,
-  ShieldCheck
+  ShieldCheck,
+  UsersRound
 } from 'lucide-react';
 import Logo from './Logo';
 import { useAuth } from '../contexts/AuthContext';
@@ -27,12 +28,14 @@ export const Sidebar = ({ mobile, onClose }: SidebarProps) => {
   // Check if the user has superadmin role
   // User with role 'organizer' or 'admin' can access superadmin
   const isSuperAdmin = profile?.role === 'organizer' || profile?.role === 'admin';
+  const isVisitor = profile?.role === 'visitor';
   
   // Debug info - remove in production
   console.log('Sidebar Profile:', { 
     role: profile?.role, 
     id: profile?.user_id,
-    canAccessAdmin: isSuperAdmin
+    canAccessAdmin: isSuperAdmin,
+    isVisitor
   });
 
   const handleItemClick = () => {
@@ -42,11 +45,14 @@ export const Sidebar = ({ mobile, onClose }: SidebarProps) => {
   };
 
   const navigationItems = [
-    {
-      name: 'Overview',
-      path: '/dashboard',
-      icon: LayoutDashboard
-    },
+    // Only show Overview for non-visitors (organizer and admin)
+    ...(!isVisitor ? [
+      {
+        name: 'My Events',
+        path: '/dashboard',
+        icon: LayoutDashboard
+      }
+    ] : []),
     {
       name: 'All Events',
       path: '/dashboard/events',
@@ -57,20 +63,29 @@ export const Sidebar = ({ mobile, onClose }: SidebarProps) => {
       path: '/dashboard/registrations',
       icon: UserPlus
     },
+    // Hide Participants, Team and Planning pages from visitors
+    ...(!isVisitor ? [
+      {
+        name: 'Participants',
+        path: '/dashboard/participants',
+        icon: Users
+      },
+      {
+        name: 'Team',
+        path: '/dashboard/team',
+        icon: UserPlus
+      },
+      {
+        name: 'Planning',
+        path: '/dashboard/planning',
+        icon: Plane
+      }
+    ] : []),
+    // Add Organizers page for all users
     {
-      name: 'Participants',
-      path: '/dashboard/participants',
-      icon: Users
-    },
-    {
-      name: 'Team',
-      path: '/dashboard/team',
-      icon: UserPlus
-    },
-    {
-      name: 'Planning',
-      path: '/dashboard/planning',
-      icon: Plane
+      name: 'Organizers',
+      path: '/dashboard/organizers',
+      icon: UsersRound
     },
     {
       name: 'Help',
@@ -86,7 +101,7 @@ export const Sidebar = ({ mobile, onClose }: SidebarProps) => {
   ];
 
   return (
-    <div className="flex h-full flex-col bg-gradient-to-b from-blue-800 to-blue-600 text-white">
+    <div className="flex h-full flex-col text-white min-h-screen">
       <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
         <div className="flex items-center justify-center flex-shrink-0 px-4">
           <Logo size="lg" className="scale-150" />

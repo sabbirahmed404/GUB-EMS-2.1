@@ -1,19 +1,26 @@
 import { useState } from 'react';
-import { Menu, X, Home, Calendar, Users, Settings, LogOut } from 'lucide-react';
+import { Menu, X, Home, Calendar, Users, Settings, LogOut, Briefcase } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
-  const { signOut } = useAuth();
+  const { signOut, profile } = useAuth();
   const navigate = useNavigate();
 
-  const menuItems = [
-    { icon: Home, label: 'Overview', path: '/dashboard' },
-    { icon: Calendar, label: 'Events', path: '/dashboard/events' },
-    { icon: Users, label: 'Participants', path: '/dashboard/participants' },
-    { icon: Settings, label: 'Settings', path: '/dashboard/settings' },
+  // Define all possible menu items with role restrictions
+  const allMenuItems = [
+    { icon: Home, label: 'My Events', path: '/dashboard', roles: ['organizer', 'admin'] },
+    { icon: Calendar, label: 'Events', path: '/dashboard/events', roles: ['visitor', 'organizer', 'admin'] },
+    { icon: Users, label: 'Participants', path: '/dashboard/participants', roles: ['organizer', 'admin'] },
+    { icon: Briefcase, label: 'Organizers', path: '/dashboard/organizers', roles: ['admin'] },
+    { icon: Settings, label: 'Settings', path: '/dashboard/settings', roles: ['visitor', 'organizer', 'admin'] },
   ];
+
+  // Filter menu items based on user role
+  const menuItems = allMenuItems.filter(item => 
+    profile && item.roles.includes(profile.role)
+  );
 
   const handleLogout = async () => {
     try {
@@ -25,12 +32,12 @@ export default function Sidebar() {
   };
 
   return (
-    <div className={`fixed top-0 left-0 h-full bg-white shadow-xl transition-all duration-300 z-50 
+    <div className={`fixed top-0 left-0 h-full shadow-md transition-all duration-300 z-50 
       ${isOpen ? 'w-64' : 'w-20'}`}>
 
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="absolute right-0 top-4 -mr-10 p-2 bg-white rounded-r-lg shadow-lg"
+        className="absolute right-0 top-4 -mr-10 p-2 bg-white rounded-r-lg shadow-md"
       >
         {isOpen ? <X size={20} /> : <Menu size={20} />}
       </button>

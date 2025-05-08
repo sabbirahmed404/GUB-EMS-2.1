@@ -139,7 +139,7 @@ export default function UserEventTable() {
       console.log('Fetching user events for:', profile.user_id);
       setLoading(true);
 
-      // First fetch events created by the user
+      // Fetch only events created by the user
       const { data: createdEvents, error: createdError } = await supabase
         .from('events')
         .select('event_id,eid,event_name,organizer_name,organizer_code,venue,start_date,end_date,created_at')
@@ -148,36 +148,8 @@ export default function UserEventTable() {
 
       if (createdError) throw createdError;
 
-      // Then fetch events where user is a participant
-      const { data: participatingEvents, error: participatingError } = await supabase
-        .from('participants')
-        .select(`
-          event:events (
-            event_id,
-            eid,
-            event_name,
-            organizer_name,
-            organizer_code,
-            venue,
-            start_date,
-            end_date,
-            created_at
-          )
-        `)
-        .eq('user_id', profile.user_id)
-        .returns<{ event: Event }[]>();
-
-      if (participatingError) throw participatingError;
-
-      // Combine and deduplicate events
-      const allEvents = [
-        ...createdEvents,
-        ...participatingEvents.map(p => p.event).filter((event): event is Event => event !== null)
-      ];
-      const uniqueEvents = Array.from(new Map(allEvents.map(event => [event.event_id, event])).values());
-
       // Calculate status dynamically
-      const eventsWithStatus = uniqueEvents.map(event => ({
+      const eventsWithStatus = createdEvents.map(event => ({
         ...event,
         status: calculateEventStatus(event.start_date, event.end_date)
       }));
@@ -290,6 +262,13 @@ export default function UserEventTable() {
       return profile.organizer_code === organizerCode;
     };
     
+    // Check if user can edit (must be organizer role and own the event, or admin)
+    const canEdit = (organizerCode: string) => {
+      if (!profile) return false;
+      if (profile.role === 'admin') return true; // Admins can edit any event
+      return profile.role === 'organizer' && profile.organizer_code === organizerCode;
+    };
+    
     return (
       <div className="flex items-center space-x-2">
         <EventDetailsDrawer 
@@ -300,15 +279,17 @@ export default function UserEventTable() {
             </Button>
           }
         />
-        {profile?.role === 'organizer' && isUserEvent(event.organizer_code) && (
-          <button
-            onClick={() => navigate(`/dashboard/events/edit/${event.event_id}`)}
-            className="text-green-600 hover:text-green-700 hover:bg-green-50 p-1.5 border border-green-200 rounded-md flex items-center"
+        {canEdit(event.organizer_code) && (
+          <Button
+            onClick={() => navigate(`/dashboard/events/${event.eid}/edit`)}
+            variant="outline"
+            size="sm"
+            className="text-green-600 hover:text-green-700 hover:bg-green-50 p-1.5 border border-green-200"
             title="Edit Event"
           >
             <Edit className="h-4 w-4 mr-1" />
             <span>Edit</span>
-          </button>
+          </Button>
         )}
       </div>
     );

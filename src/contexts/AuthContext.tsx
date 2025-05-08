@@ -29,6 +29,7 @@ export interface AuthContextType {
   error: Error | null;
   signInWithGoogle: () => Promise<{ success: boolean }>;
   updateUserRole: (role: Role) => Promise<void>;
+  updateUserProfile: (updatedProfile: Partial<UserProfile>) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -172,6 +173,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateUserProfile = async (updatedProfile: Partial<UserProfile>) => {
+    if (!user || !profile) {
+      throw new Error('No user or profile found');
+    }
+
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({
+          ...updatedProfile,
+          updated_at: new Date().toISOString()
+        })
+        .eq('auth_id', user.id);
+
+      if (error) throw error;
+
+      // Update the local profile state
+      setProfile(prev => prev ? { ...prev, ...updatedProfile } : null);
+      
+      return;
+    } catch (err) {
+      console.error('Error updating user profile:', err);
+      throw err;
+    }
+  };
+
   const updateUserRole = async (role: Role) => {
     if (!user || !profile) {
       throw new Error('No user or profile found');
@@ -211,6 +238,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     error,
     signInWithGoogle,
     updateUserRole,
+    updateUserProfile,
     signOut
   };
 

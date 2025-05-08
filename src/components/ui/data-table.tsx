@@ -13,13 +13,13 @@ const DataTable = React.forwardRef<HTMLDivElement, DataTableProps>(
       <div
         ref={ref}
         className={cn(
-          "rounded-lg overflow-hidden border border-blue-100 shadow-sm bg-white",
+          "rounded-lg overflow-hidden border border-blue-100 shadow-sm bg-white w-full mobile-full-width",
           className
         )}
         {...props}
       >
-        <div className="overflow-x-auto">
-          <Table className="min-w-full divide-y divide-blue-100">
+        <div className="overflow-x-auto w-full">
+          <Table className="w-full divide-y divide-blue-100">
             {children}
           </Table>
         </div>
@@ -99,7 +99,7 @@ const DataTableHead: React.FC<DataTableHeadProps> = ({
   return (
     <Th
       className={cn(
-        "px-6 py-3 text-left text-xs font-medium uppercase tracking-wider",
+        "px-4 py-3 text-left text-xs font-medium uppercase tracking-wider",
         isSortable && "cursor-pointer hover:bg-blue-700",
         className
       )}
@@ -126,11 +126,64 @@ const DataTableCell: React.FC<DataTableCellProps> = ({
   ...props 
 }) => (
   <Td
-    className={cn("px-6 py-4 whitespace-nowrap text-sm", className)}
+    className={cn("px-4 py-3 whitespace-nowrap text-sm", className)}
     {...props}
   />
 );
 DataTableCell.displayName = "DataTableCell";
+
+// Add custom styles to fix mobile view
+React.useEffect(() => {
+  const style = document.createElement('style');
+  style.innerHTML = `
+    /* Custom responsive table styles for mobile */
+    @media screen and (max-width: 640px) {
+      .mobile-full-width {
+        width: 100% !important;
+        max-width: 100% !important; 
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        border-radius: 0 !important;
+        border-left: none !important;
+        border-right: none !important;
+      }
+      
+      .bg-blue-50.rounded-lg > div {
+        padding: 0 !important;
+        margin-bottom: 0 !important;
+      }
+      
+      .responsiveTable {
+        width: 100% !important;
+        margin: 0 !important;
+      }
+      
+      /* Target mobile-collapsed view */
+      .responsiveTable tbody td {
+        padding-left: 16px !important;
+        padding-right: 16px !important;
+        border-bottom: 1px solid #e6f0ff !important;
+      }
+      
+      .responsiveTable td:before {
+        font-weight: 600 !important;
+        color: #1e40af !important;
+        width: 120px !important;
+        padding-left: 0 !important;
+      }
+      
+      .responsiveTable tr {
+        margin-bottom: 8px !important;
+        border: none !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+  return () => {
+    document.head.removeChild(style);
+  };
+}, []);
 
 export {
   DataTable,

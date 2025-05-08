@@ -92,12 +92,13 @@ export default function EventUpdatePage() {
         });
 
         // Verify if user has permission to edit this event
-        if (eventData.created_by !== profile.user_id) {
+        if (eventData.created_by !== profile.user_id && profile.role !== 'admin') {
           console.error('Permission denied:', { 
             eventCreator: eventData.created_by, 
-            currentUser: profile.user_id 
+            currentUser: profile.user_id,
+            userRole: profile.role
           });
-          throw new Error('You do not have permission to edit this event');
+          throw new Error('You do not have permission to update this event');
         }
 
         // Then fetch event details

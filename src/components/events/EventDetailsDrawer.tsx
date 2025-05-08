@@ -23,6 +23,7 @@ import {
 import { Avatar } from "../ui/avatar"
 import { Badge } from "../ui/badge"
 import { Separator } from "../ui/separator"
+import { Skeleton } from "../../components/ui/skeleton"
 
 interface EventDetail {
   event_id: string
@@ -164,8 +165,14 @@ export function EventDetailsDrawer({ eventId, trigger }: EventDetailsDrawerProps
     
     // Navigate to the edit page
     setTimeout(() => {
-      navigate(`/dashboard/events/edit/${event?.eid}`);
+      navigate(`/dashboard/events/${event?.eid}/edit`);
     }, 300)
+  }
+
+  // Check if user is allowed to edit (not a visitor and is event organizer)
+  const canEdit = () => {
+    if (!profile || !event) return false
+    return profile.role !== 'visitor' && isUserEvent()
   }
 
   return (
@@ -438,7 +445,7 @@ export function EventDetailsDrawer({ eventId, trigger }: EventDetailsDrawerProps
           {event && (
             <DrawerFooter className="p-4 border-t bg-[hsl(var(--background))]">
               <div className="flex flex-col sm:flex-row gap-3 w-full">
-                {profile?.role === 'organizer' && isUserEvent() && (
+                {canEdit() && (
                   <Button 
                     variant="default" 
                     onClick={handleEdit}

@@ -30,9 +30,9 @@ export default function EventCreatePage() {
           return;
         }
 
-        if (profile.role !== 'organizer') {
+        if (profile.role !== 'organizer' && profile.role !== 'admin') {
           console.error('Role check failed:', { role: profile.role });
-          setError('Only organizers can create events');
+          setError('Only organizers and admins can create events');
           navigate('/dashboard');
           return;
         }

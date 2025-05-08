@@ -66,22 +66,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Main content */}
       <div className="flex flex-col flex-1 md:pl-64 h-screen">
-        {/* Profile Button in top right corner */}
-        <div className="absolute top-9 right-16 z-10">
-          <ProfileButton />
-        </div>
-        
-        {/* Welcome section */}
-        <div className="px-6 pt-6 pb-2">
-          <h1 className="text-2xl font-bold text-white">{greeting}, {profile.full_name}</h1>
-          <p className="text-blue-100 mt-1 opacity-80">Welcome to your Dashboard</p>
+        {/* Header with greeting and profile button */}
+        <div className="px-6 pt-6 pb-2 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-white">{greeting}, {profile.full_name}</h1>
+            <p className="text-blue-100 mt-1 opacity-80">Welcome to your Dashboard</p>
+          </div>
+          <div className="flex-shrink-0">
+            <ProfileButton />
+          </div>
         </div>
         
         {/* Main content scrollable area */}
         <main className="flex-1 overflow-y-auto pb-[74px] md:pb-0 pb-safe">
-          <div className="py-4 px-4">
+          <div className="py-4 px-4 md:px-4 px-0">
             <div className="bg-blue-50 text-blue-800 rounded-lg shadow-lg blue-shadow-lg dashboard-accent-top overflow-hidden">
-              <div className="p-6">
+              <div className="md:p-6 p-0 overflow-x-hidden">
                 {children}
               </div>
             </div>
