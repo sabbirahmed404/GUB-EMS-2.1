@@ -158,46 +158,7 @@ body:not([data-route="/"]) nav {
   /* Ensure content has enough height to scroll */
   html, body {
     min-height: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
     scroll-behavior: smooth;
-    /* Fix for the mobile PWA 10px gap issue */
-    overflow-x: hidden;
-    overflow-y: auto; /* Explicitly allow vertical scrolling */
-    position: relative;
-    /* iOS height fix */
-    -webkit-text-size-adjust: 100%;
-    -webkit-tap-highlight-color: transparent;
-    /* Enable momentum scrolling */
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  /* Fix for root container to fill entire viewport */
-  #root {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    min-height: -webkit-fill-available;
-    min-height: calc(var(--vh, 1vh) * 100);
-    margin: 0;
-    padding: 0;
-    /* Ensure scrolling works */
-    overflow-y: auto;
-    /* Force hardware acceleration */
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-  }
-  
-  /* Fix for mobile safari */
-  @supports (-webkit-touch-callout: none) {
-    #root {
-      /* Specific Safari iOS fix */
-      height: -webkit-fill-available;
-      min-height: -webkit-fill-available;
-      /* Add momentum scrolling */
-      -webkit-overflow-scrolling: touch;
-    }
   }
 }
 

@@ -45,52 +45,6 @@ function RouteTracker() {
   return null;
 }
 
-// Helper component to fix viewport height issues on mobile
-function ViewportFixer() {
-  useEffect(() => {
-    // Function to update viewport height CSS variable with fixed 100vh calculation
-    const updateViewportHeight = () => {
-      // Get the viewport height more accurately for mobile
-      const vh = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty('--vh', `${vh}px`);
-
-      // iOS specific fix for PWA 
-      if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-        // Force redraw to prevent white space at bottom
-        document.body.style.display = 'none';
-        // This triggers a reflow
-        void document.body.offsetHeight;
-        document.body.style.display = '';
-      }
-    };
-
-    // Initial call
-    updateViewportHeight();
-
-    // Update on window resize and orientation change
-    window.addEventListener('resize', updateViewportHeight);
-    window.addEventListener('orientationchange', () => {
-      // For orientation changes, we need a slight delay
-      setTimeout(updateViewportHeight, 100);
-    });
-
-    // Update when page becomes visible or scrolled
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
-        updateViewportHeight();
-      }
-    });
-    
-    return () => {
-      window.removeEventListener('resize', updateViewportHeight);
-      window.removeEventListener('orientationchange', () => {});
-      document.removeEventListener('visibilitychange', () => {});
-    };
-  }, []);
-
-  return null;
-}
-
 // Public layout component
 function PublicLayout() {
   useEffect(() => {
@@ -197,7 +151,6 @@ function App() {
       <CacheProvider>
         <Router>
           <RouteTracker />
-          <ViewportFixer />
           <Routes>
             {/* Auth routes */}
             <Route element={<AuthRedirect><Outlet /></AuthRedirect>}>

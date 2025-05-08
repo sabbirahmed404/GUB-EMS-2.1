@@ -203,10 +203,9 @@ export default function Home() {
     <div className="bg-white flex-grow">
       {/* Hero Section */}
       <section 
-        className="relative pt-24 md:pt-36 pb-20 md:pb-28 overflow-hidden" 
+        className="relative pt-36 pb-28 overflow-hidden" 
         style={{ 
           background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 60%, ${colors.tertiary} 100%)`,
-          minHeight: 'fit-content'
         }}
       >
         {/* Gradient decorations */}
@@ -222,13 +221,13 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center relative z-10">
           {/* Left Column */}
           <div className="text-white">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 md:mb-6">
+            <h1 className="text-5xl font-bold mb-6">
               GUB Event Management System
             </h1>
-            <h2 className="text-xl md:text-2xl mb-3 md:mb-4" style={{ color: colors.lighter }}>
+            <h2 className="text-2xl mb-4" style={{ color: colors.lighter }}>
               Transform Your Events into Unforgettable Experiences
             </h2>
-            <p className="text-base md:text-lg opacity-90 mb-6 md:mb-8 text-justify" style={{ color: colors.lightest }}>
+            <p className="text-lg opacity-90 mb-8 text-justify" style={{ color: colors.lightest }}>
               Streamline your event planning process with our comprehensive management system. 
               From registration to analytics, we provide all the tools you need to create 
               successful events that leave lasting impressions.
@@ -236,7 +235,7 @@ export default function Home() {
             <div className="flex flex-wrap gap-4">
               <Link 
                 to="/events" 
-                className="px-5 py-2.5 md:px-6 md:py-3 rounded-lg font-medium flex items-center gap-2 transition-all duration-300 hover:shadow-lg hover:translate-y-[-2px]"
+                className="px-6 py-3 rounded-lg font-medium flex items-center gap-2 transition-all duration-300 hover:shadow-lg hover:translate-y-[-2px]"
                 style={{ 
                   backgroundColor: colors.accent,
                   color: colors.primary,
@@ -248,7 +247,7 @@ export default function Home() {
               </Link>
               <Link 
                 to="/auth/login" 
-                className="px-5 py-2.5 md:px-6 md:py-3 rounded-lg font-medium border-2 transition-all duration-300 hover:bg-white/10"
+                className="px-6 py-3 rounded-lg font-medium border-2 transition-all duration-300 hover:bg-white/10"
                 style={{ 
                   borderColor: colors.accent,
                   color: colors.lightest
@@ -259,9 +258,9 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right Column - Event Image Slideshow - Now visible on mobile too */}
-          <div className="mt-6 md:mt-0">
-            <div className="rounded-xl overflow-hidden shadow-2xl transform hover:scale-[1.02] transition-transform duration-500 relative h-[200px] md:h-[340px]">
+          {/* Right Column - Event Image Slideshow */}
+          <div className="hidden md:block">
+            <div className="rounded-xl overflow-hidden shadow-2xl transform hover:scale-[1.02] transition-transform duration-500 relative h-[340px]">
               {eventImages.map((image, index) => (
                 <img 
                   key={index}

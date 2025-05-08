@@ -121,56 +121,16 @@ html, body {
   overflow-y: auto;
 }
 
-/* iOS Safari body scroll bug fix - updated to prevent the 10px shift */
+/* iOS Safari body scroll bug fix - modified to prevent 10px shift */
 @supports (-webkit-touch-callout: none) {
   body {
     /* iOS specific rules */
-    min-height: 100%;
-    min-height: -webkit-fill-available;
-    height: 100%;
     height: -webkit-fill-available;
-    /* Fix iOS viewport issues by using constant value */
-    padding-bottom: constant(safe-area-inset-bottom);
-    padding-bottom: env(safe-area-inset-bottom);
-    /* Prevent horizontal overflow but allow vertical scrolling */
-    overflow-x: hidden;
-    overflow-y: auto !important;
-    position: relative;
-    /* Enable momentum scrolling */
-    -webkit-overflow-scrolling: touch;
   }
   
-  /* Fix for PWA viewport height on iOS */
-  .mobile-full-height {
-    min-height: 100vh !important;
-    min-height: -webkit-fill-available !important;
-    height: 100vh !important;
-    height: -webkit-fill-available !important;
-  }
-  
-  /* Force content to bottom of screen */
   #root {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    min-height: -webkit-fill-available;
-    /* Allow scrolling content */
+    height: 100%;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-  }
-  
-  /* Fix PWA viewport issues with flex grow */
-  main, .flex-grow {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    /* Allow scrolling within main content areas */
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  /* Fix for bottom whitespace */
-  .pb-safe {
-    padding-bottom: calc(4.625rem + env(safe-area-inset-bottom, 0));
   }
 } 
