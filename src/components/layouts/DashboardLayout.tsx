@@ -24,13 +24,23 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const setVhProperty = () => {
       const vh = window.innerHeight * 0.01;
       document.documentElement.style.setProperty('--vh', `${vh}px`);
+      
+      // Update safe area inset bottom for PWA mode
+      const safeAreaInsetBottom = window.matchMedia('(display-mode: standalone)').matches ? 
+        (window.navigator as any).standalone ? 'env(safe-area-inset-bottom)' : '0px' : '0px';
+      document.documentElement.style.setProperty('--safe-area-inset-bottom', safeAreaInsetBottom);
     };
     
     setVhProperty();
     window.addEventListener('resize', setVhProperty);
+    window.addEventListener('orientationchange', setVhProperty);
+    
+    // Force update after a short delay to ensure proper calculation after PWA launch
+    setTimeout(setVhProperty, 100);
     
     return () => {
       window.removeEventListener('resize', setVhProperty);
+      window.removeEventListener('orientationchange', setVhProperty);
     };
   }, []);
 
@@ -78,8 +88,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
         
         {/* Main content scrollable area */}
-        <main className="flex-1 overflow-y-auto pb-[74px] md:pb-0">
-          <div className="py-4 px-4 md:px-4 px-0">
+        <main className="flex-1 overflow-y-auto pb-safe">
+          <div className="py-4 px-4">
             <div className="bg-blue-50 text-blue-800 rounded-lg shadow-lg blue-shadow-lg dashboard-accent-top overflow-hidden">
               <div className="md:p-6 p-4 overflow-x-hidden">
                 {children}

@@ -60,8 +60,8 @@ export const MobileNav = ({ onCreateEvent }: MobileNavProps) => {
   const showActionButton = profile?.role === 'organizer' || profile?.role === 'admin';
 
   return (
-    <div className="fixed bottom-0 left-0 z-50 w-full h-[74px] bg-blue-800 bg-dot-pattern border-t border-blue-700 md:hidden">
-      <div className={`grid h-full ${showActionButton ? 'grid-cols-5' : 'grid-cols-4'} max-w-screen-sm mx-auto`}>
+    <div className="fixed bottom-0 left-0 z-50 w-full bg-blue-800 bg-dot-pattern border-t border-blue-700 md:hidden" style={{ paddingBottom: 'var(--safe-area-inset-bottom)' }}>
+      <div className={`grid h-[74px] ${showActionButton ? 'grid-cols-5' : 'grid-cols-4'} max-w-screen-sm mx-auto`}>
         {/* First half of navigation items */}
         {itemsToShow.slice(0, showActionButton ? 2 : 2).map((item) => {
           const isActive = location.pathname === item.path;
