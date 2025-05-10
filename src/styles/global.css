@@ -2,6 +2,7 @@
 :root {
   --vh: 1vh;
   --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --ios-bottom-fix: 0px; /* Default value */
   
   /* Blue color palette */
   --blue-primary: #03045e;
@@ -117,6 +118,25 @@ html, body {
   padding-bottom: calc(4.625rem + var(--safe-area-inset-bottom));
 }
 
+/* Force main content area to extend to the end of the screen on iOS */
+html.ios .mobile-full-height {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  margin-bottom: 0 !important;
+}
+
+/* Fix bottom area positioning for iPhones with notch */
+@supports (padding-bottom: constant(safe-area-inset-bottom)) {
+  :root {
+    --ios-bottom-fix: 15px; /* Add extra bottom spacing for iPhone X and newer */
+  }
+  
+  .fixed-bottom-ios {
+    padding-bottom: constant(safe-area-inset-bottom);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
 /* For mobile dialogs */
 .mobile-dialog {
   max-height: 90vh;
@@ -129,9 +149,8 @@ html, body {
   overflow-y: auto;
 }
 
-/* iOS Safari PWA specific fixes */
+/* iOS PWA specific fixes with explicit platform targeting */
 @media all and (display-mode: standalone) {
-  /* Specific fixes for standalone mode (PWA) */
   body {
     padding: 0;
     margin: 0;
@@ -147,6 +166,32 @@ html, body {
     height: 100%;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: var(--safe-area-inset-bottom);
+    padding-bottom: calc(var(--safe-area-inset-bottom) + var(--ios-bottom-fix));
   }
+  
+  /* Target iPhone X, XR, XS and newer (devices with home indicator) */
+  @media only screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3),
+         only screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2),
+         only screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3),
+         only screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3),
+         only screen and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) {
+    :root {
+      --ios-bottom-fix: 25px; /* Larger fix for iPhone with home indicator */
+    }
+    
+    #root {
+      padding-bottom: calc(var(--safe-area-inset-bottom) + var(--ios-bottom-fix)); 
+    }
+  }
+}
+
+/* Apply hardware acceleration for fixed elements */
+.fixed-bottom-nav {
+  -webkit-transform: translateZ(0);
+  -moz-transform: translateZ(0);
+  -ms-transform: translateZ(0);
+  -o-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 } 

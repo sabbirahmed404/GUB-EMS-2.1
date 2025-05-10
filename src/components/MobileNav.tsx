@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Calendar, UserPlus, Users, Plus, Briefcase } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,6 +11,19 @@ export const MobileNav = ({ onCreateEvent }: MobileNavProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const [isIOS, setIsIOS] = useState(false);
+
+  useEffect(() => {
+    // Detect iOS device
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    setIsIOS(isIOSDevice);
+    
+    // Add iOS class to html for targeted CSS
+    if (isIOSDevice) {
+      document.documentElement.classList.add('ios');
+    }
+  }, []);
 
   // Base navigation items
   const baseNavItems = [
@@ -60,7 +73,14 @@ export const MobileNav = ({ onCreateEvent }: MobileNavProps) => {
   const showActionButton = profile?.role === 'organizer' || profile?.role === 'admin';
 
   return (
-    <div className="fixed bottom-0 left-0 z-50 w-full bg-blue-800 bg-dot-pattern border-t border-blue-700 md:hidden" style={{ paddingBottom: 'var(--safe-area-inset-bottom)' }}>
+    <div 
+      className={`fixed bottom-0 left-0 z-50 w-full bg-blue-800 bg-dot-pattern border-t border-blue-700 md:hidden fixed-bottom-nav ${isIOS ? 'fixed-bottom-ios' : ''}`}
+      style={{ 
+        paddingBottom: 'var(--safe-area-inset-bottom)',
+        bottom: 0,
+        margin: 0
+      }}
+    >
       <div className={`grid h-[74px] ${showActionButton ? 'grid-cols-5' : 'grid-cols-4'} max-w-screen-sm mx-auto`}>
         {/* First half of navigation items */}
         {itemsToShow.slice(0, showActionButton ? 2 : 2).map((item) => {

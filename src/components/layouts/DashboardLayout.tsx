@@ -18,25 +18,59 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const [showEventForm, setShowEventForm] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isPWA, setIsPWA] = useState(false);
   
   useEffect(() => {
+    // Detect iOS device
+    const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    setIsIOS(isIOSDevice);
+    
+    // Detect if running as PWA
+    const isPWAMode = window.matchMedia('(display-mode: standalone)').matches || 
+                     (window.navigator as any).standalone === true;
+    setIsPWA(isPWAMode);
+    
     // Set viewport height for mobile browsers
     const setVhProperty = () => {
       const vh = window.innerHeight * 0.01;
       document.documentElement.style.setProperty('--vh', `${vh}px`);
       
       // Update safe area inset bottom for PWA mode
-      const safeAreaInsetBottom = window.matchMedia('(display-mode: standalone)').matches ? 
-        (window.navigator as any).standalone ? 'env(safe-area-inset-bottom)' : '0px' : '0px';
+      const safeAreaInsetBottom = isPWAMode ? 
+        'env(safe-area-inset-bottom)' : '0px';
       document.documentElement.style.setProperty('--safe-area-inset-bottom', safeAreaInsetBottom);
+      
+      // Force refresh layout on rotation
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+      }, 50);
     };
     
     setVhProperty();
     window.addEventListener('resize', setVhProperty);
     window.addEventListener('orientationchange', setVhProperty);
     
+    // Extra iOS fixes for home indicator area on rotation
+    if (isIOSDevice && isPWAMode) {
+      window.addEventListener('orientationchange', () => {
+        setTimeout(() => {
+          document.body.style.display = 'none';
+          setTimeout(() => {
+            document.body.style.display = 'block';
+          }, 5);
+        }, 300);
+      });
+    }
+    
     // Force update after a short delay to ensure proper calculation after PWA launch
     setTimeout(setVhProperty, 100);
+    
+    // Force fix for iPhone XR bottom area
+    if (isIOSDevice && window.innerWidth === 414 && window.innerHeight === 896) {
+      document.documentElement.style.setProperty('--ios-bottom-fix', '35px');
+    }
     
     return () => {
       window.removeEventListener('resize', setVhProperty);
@@ -67,6 +101,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     greeting = "Good evening";
   }
 
+  const mainContentClass = `flex-1 overflow-y-auto pb-safe ${isIOS && isPWA ? 'pb-[100px]' : ''}`;
+
   return (
     <div className="flex flex-col mobile-full-height bg-blue-800 bg-dot-pattern text-white md:flex-row">
       {/* Desktop sidebar */}
@@ -75,7 +111,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </div>
 
       {/* Main content */}
-      <div className="flex flex-col flex-1 md:pl-64 h-screen">
+      <div className={`flex flex-col flex-1 md:pl-64 ${isIOS ? 'h-[-webkit-fill-available]' : 'h-screen'}`}>
         {/* Header with greeting and profile button */}
         <div className="px-6 pt-6 pb-2 flex justify-between items-center">
           <div>
@@ -88,7 +124,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
         
         {/* Main content scrollable area */}
-        <main className="flex-1 overflow-y-auto pb-safe">
+        <main className={mainContentClass}>
           <div className="py-4 px-4">
             <div className="bg-blue-50 text-blue-800 rounded-lg shadow-lg blue-shadow-lg dashboard-accent-top overflow-hidden">
               <div className="md:p-6 p-4 overflow-x-hidden">
