@@ -71,7 +71,7 @@ export const MobileNav = ({ onCreateEvent }: MobileNavProps) => {
             <Link
               key={item.name}
               to={item.path}
-              className="flex flex-col items-center justify-center -translate-y-[5px] relative"
+              className="flex flex-col items-center justify-center relative"
             >
               <Icon className={`w-6 h-6 ${isActive ? 'text-white' : 'text-blue-200'}`} />
               <span className={`text-xs mt-1 truncate w-full text-center ${
@@ -88,7 +88,7 @@ export const MobileNav = ({ onCreateEvent }: MobileNavProps) => {
         {showActionButton && (
           <button
             onClick={onCreateEvent}
-            className="flex flex-col items-center justify-center -translate-y-[5px]"
+            className="flex flex-col items-center justify-center"
           >
             <div className="flex items-center justify-center w-12 h-12 bg-white rounded-full -mt-6 shadow-lg">
               <Plus className="w-6 h-6 text-blue-800" />
@@ -105,7 +105,7 @@ export const MobileNav = ({ onCreateEvent }: MobileNavProps) => {
             <Link
               key={item.name}
               to={item.path}
-              className="flex flex-col items-center justify-center -translate-y-[5px] relative"
+              className="flex flex-col items-center justify-center relative"
             >
               <Icon className={`w-6 h-6 ${isActive ? 'text-white' : 'text-blue-200'}`} />
               <span className={`text-xs mt-1 truncate w-full text-center ${

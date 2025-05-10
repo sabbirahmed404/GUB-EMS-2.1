@@ -78,10 +78,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
         
         {/* Main content scrollable area */}
-        <main className="flex-1 overflow-y-auto pb-[74px] md:pb-0 pb-safe">
+        <main className="flex-1 overflow-y-auto pb-[74px] md:pb-0">
           <div className="py-4 px-4 md:px-4 px-0">
             <div className="bg-blue-50 text-blue-800 rounded-lg shadow-lg blue-shadow-lg dashboard-accent-top overflow-hidden">
-              <div className="md:p-6 p-0 overflow-x-hidden">
+              <div className="md:p-6 p-4 overflow-x-hidden">
                 {children}
               </div>
             </div>

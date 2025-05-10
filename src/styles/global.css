@@ -102,6 +102,7 @@ html, body {
 .mobile-full-height {
   height: 100vh; /* Fallback */
   height: calc(var(--vh, 1vh) * 100);
+  min-height: -webkit-fill-available; /* Added for iOS */
 }
 
 /* Prevent content from being hidden behind bottom nav */
@@ -125,7 +126,9 @@ html, body {
 @supports (-webkit-touch-callout: none) {
   body {
     /* iOS specific rules */
-    height: -webkit-fill-available;
+    height: 100%;
+    min-height: -webkit-fill-available;
+    overflow: hidden;
   }
   
   #root {
