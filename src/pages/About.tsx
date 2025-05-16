@@ -72,7 +72,7 @@ export default function About() {
          <div className="pb-[80px]"></div>
           <h1 className="text-5xl font-bold mb-2 text-gray-900 tracking-tight">Meet Our Team</h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            The collective minds behind the GUB Event Management System. We're building the future of event management as Team at Green University of Bangladesh.
+            The collective minds behind the GUB Event Management System. We're building the future of event management as a Team at Green University of Bangladesh.
           </p>
         </div>
 
