@@ -40,7 +40,7 @@ export default function About() {
       linkedinUrl: "",
       instagramUrl: "https://instagram.com/hridoy7096",
       image: "https://tinyurl.com/ramzan10",
-      bio:"Hello Ramjan here, a fourth-year Computer Science & Engineering student at Green University of Bangladesh (2022-2026). I am currently enthusiastic on data analytics and algorithmic problem-solving, with particular expertise in JavaScript ecosystems including Node.js. My technical portfolio includes structured programming, data structures, and professional documentation using LaTeX. I currently lives in Khilgaon, Dhaka, Bangladesh.",
+      bio:"Hello Ramjan here, a fourth-year Computer Science & Engineering student at Green University of Bangladesh (2022-2026). I am currently enthusiastic on data analytics and algorithmic problem-solving, with particular expertise in JavaScript ecosystems including Node.js. My technical portfolio includes structured programming, data structures, and professional documentation using LaTeX. Currently living in Khilgaon, Dhaka, Bangladesh.",
       id: "221902227",
       skills: ["Data Analytics", "Programming", "Data Structures", "JavaScript", "Node.js", "LaTeX"],
       education: "CSE, Green University of Bangladesh (2022 - 2026)"
