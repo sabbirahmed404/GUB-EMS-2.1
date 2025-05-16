@@ -16,7 +16,7 @@ export default function About() {
       linkedinUrl: "https://linkedin.com/in/msabbir-ahmed",
       instagramUrl: "",
       image: "https://tinyurl.com/sabbir100",
-      bio: "CSE student at Green University of Bangladesh, specializing in software engineering and data science. I have hands-on experience in data analysis, as well as AI agents, JavaScript frameworks, and Rag. Currently, I serve as Chief Technical Officer at CodeMyPixel (since October 2024), where I lead data and technical governance and strategic initiatives. I also contribute as an Advisor to the Committee 2025 of the Green University of Bangladesh.",
+      bio: "CSE student at Green University of Bangladesh, specializing in software engineering and data science. I have hands-on experience in data analysis, as well as AI agents, JavaScript frameworks, and Rag. Currently, I serve as Chief Technical Officer at CodeMyPixel (since October 2024), where I lead data and technical governance and strategic initiatives. I also contribute as an Advisor to the Committee 2025 of the Green University Photography Club.",
       id: "221902129",
       skills: ["Python", "Data Science", "JavaScript", "AI", "RAG", "Web Development", "Leadership"],
       education: "CSE, Green University of Bangladesh"
