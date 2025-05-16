@@ -30,14 +30,51 @@ cp src/lib/supabase/edge-functions/send-email.ts supabase/functions/send-email/i
 echo "Deploying Edge Function to Supabase..."
 supabase functions deploy send-email --project-ref $PROJECT_REF
 
-# Set secrets if they don't exist
+# Check if .env file exists and source it
+if [ -f .env ]; then
+  echo "Loading environment variables from .env file..."
+  export $(grep -v '^#' .env | xargs)
+fi
+
+# Set secrets using values from environment variables or prompt for them
 echo "Setting required secrets..."
-supabase secrets set SMTP_HOST="smtp.gmail.com" --project-ref $PROJECT_REF
-supabase secrets set SMTP_PORT="465" --project-ref $PROJECT_REF
-supabase secrets set SMTP_USERNAME="msa29.contact@gmail.com" --project-ref $PROJECT_REF
-supabase secrets set SMTP_PASSWORD="ikaw tjhb bspq sohk" --project-ref $PROJECT_REF
-supabase secrets set SMTP_FROM_EMAIL="msa29.contact@gmail.com" --project-ref $PROJECT_REF
-supabase secrets set SMTP_FROM_NAME="EMS-GUB" --project-ref $PROJECT_REF
+
+# SMTP_HOST
+if [ -z "$SMTP_HOST" ]; then
+  read -p "Enter SMTP host (e.g. smtp.gmail.com): " SMTP_HOST
+fi
+supabase secrets set SMTP_HOST="$SMTP_HOST" --project-ref $PROJECT_REF
+
+# SMTP_PORT
+if [ -z "$SMTP_PORT" ]; then
+  read -p "Enter SMTP port (e.g. 465): " SMTP_PORT
+fi
+supabase secrets set SMTP_PORT="$SMTP_PORT" --project-ref $PROJECT_REF
+
+# SMTP_USERNAME
+if [ -z "$SMTP_USERNAME" ]; then
+  read -p "Enter SMTP username (your email): " SMTP_USERNAME
+fi
+supabase secrets set SMTP_USERNAME="$SMTP_USERNAME" --project-ref $PROJECT_REF
+
+# SMTP_PASSWORD
+if [ -z "$SMTP_PASSWORD" ]; then
+  read -sp "Enter SMTP password (app password for Gmail): " SMTP_PASSWORD
+  echo ""
+fi
+supabase secrets set SMTP_PASSWORD="$SMTP_PASSWORD" --project-ref $PROJECT_REF
+
+# SMTP_FROM_EMAIL
+if [ -z "$SMTP_FROM_EMAIL" ]; then
+  read -p "Enter sender email (usually same as SMTP_USERNAME): " SMTP_FROM_EMAIL
+fi
+supabase secrets set SMTP_FROM_EMAIL="$SMTP_FROM_EMAIL" --project-ref $PROJECT_REF
+
+# SMTP_FROM_NAME
+if [ -z "$SMTP_FROM_NAME" ]; then
+  read -p "Enter sender name (e.g. EMS-GUB): " SMTP_FROM_NAME
+fi
+supabase secrets set SMTP_FROM_NAME="$SMTP_FROM_NAME" --project-ref $PROJECT_REF
 
 echo "Deployment complete!"
 echo "Edge Function URL: https://${PROJECT_REF}.supabase.co/functions/v1/send-email" 

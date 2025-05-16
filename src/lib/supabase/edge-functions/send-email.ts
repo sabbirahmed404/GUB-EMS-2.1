@@ -58,9 +58,18 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Connect to SMTP server
     await client.connectTLS(smtpConfig);
 
+    // Get the required configuration from environment variables
+    const fromName = Deno.env.get("SMTP_FROM_NAME");
+    const fromEmail = Deno.env.get("SMTP_FROM_EMAIL");
+    
+    // Validate that required environment variables are set
+    if (!fromEmail) {
+      throw new Error("SMTP_FROM_EMAIL environment variable is not set");
+    }
+    
     // Send the email
     await client.send({
-      from: `${Deno.env.get("SMTP_FROM_NAME") || "EMS-GUB"} <${Deno.env.get("SMTP_FROM_EMAIL") || "msa29.contact@gmail.com"}>`,
+      from: `${fromName || "EMS-GUB"} <${fromEmail}>`,
       to: to,
       subject: subject,
       content: isHtml ? undefined : body,

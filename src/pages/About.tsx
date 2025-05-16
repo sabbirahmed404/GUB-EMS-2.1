@@ -10,7 +10,8 @@ export default function About() {
   const teamMembers = [
     {
       name: "Sabbir Ahmed",
-      role: "Developer",
+      role: "Developer (Lead)",
+      position: "CTO",
       githubUrl: "https://github.com/sabbirahmed404",
       linkedinUrl: "https://linkedin.com/in/msabbir-ahmed",
       instagramUrl: "",
@@ -18,7 +19,7 @@ export default function About() {
       bio: "CSE student at Green University of Bangladesh, specializing in software engineering and data science. I have hands-on experience in data analysis, as well as AI agents, JavaScript frameworks, and Rag. Currently, I serve as Chief Technical Officer at CodeMyPixel (since October 2024), where I lead data and technical governance and strategic initiatives. I also contribute as an Advisor to the Committee 2025 of the Green University of Bangladesh.",
       id: "221902129",
       skills: ["Python", "Data Science", "JavaScript", "AI", "RAG", "Web Development", "Leadership"],
-      education: "CSE, Green University of Bangladesh (2022 - 2026)"
+      education: "CSE, Green University of Bangladesh"
     },
     {
       name: "Raihan Kabir",
@@ -39,7 +40,7 @@ export default function About() {
       linkedinUrl: "",
       instagramUrl: "https://instagram.com/hridoy7096",
       image: "https://tinyurl.com/ramzan10",
-      bio:"Based in Khilgao, Dhaka, Ramjan is a fourth-year Computer Science & Engineering student at Green University of Bangladesh (2022-2026). He excels in data analytics and algorithmic problem-solving, with particular expertise in JavaScript ecosystems including Node.js. His technical portfolio includes structured programming, data structures, and professional documentation using LaTeX.",
+      bio:"Hello Ramjan here, a fourth-year Computer Science & Engineering student at Green University of Bangladesh (2022-2026). I am currently enthusiastic on data analytics and algorithmic problem-solving, with particular expertise in JavaScript ecosystems including Node.js. My technical portfolio includes structured programming, data structures, and professional documentation using LaTeX. I currently lives in Khilgaon, Dhaka, Bangladesh.",
       id: "221902227",
       skills: ["Data Analytics", "Programming", "Data Structures", "JavaScript", "Node.js", "LaTeX"],
       education: "CSE, Green University of Bangladesh (2022 - 2026)"
@@ -71,17 +72,17 @@ export default function About() {
          <div className="pb-[80px]"></div>
           <h1 className="text-5xl font-bold mb-2 text-gray-900 tracking-tight">Meet Our Team</h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            The collective minds behind the GUB Event Management System. We're building the future of event management at Green University of Bangladesh.
+            The brilliant minds behind the GUB Event Management System. We're building the future of event management at Green University of Bangladesh.
           </p>
         </div>
 
         <Tabs defaultValue="team" className="mb-16">
           <TabsList className="grid w-full max-w-md mx-auto grid-cols-3">
             <TabsTrigger value="team">Our Team</TabsTrigger>
-            <TabsTrigger value="tech">Technologia</TabsTrigger>
+            <TabsTrigger value="tech">Technologies</TabsTrigger>
             <TabsTrigger value="project">Project</TabsTrigger>
           </TabsList>
-
+          
           {/* Team Tab */}
           <TabsContent value="team" className="mt-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -91,10 +92,10 @@ export default function About() {
                     <div className="h-40 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
                     <div className="absolute top-24 left-1/2 transform -translate-x-1/2">
                       <Avatar className="h-32 w-32 border-4 border-white shadow-md">
-                        <AvatarImage
-                          src={member.image}
-                          alt={member.name}
-                          className={getAvatarImageStyle(member.name)}
+                        <AvatarImage 
+                          src={member.image} 
+                          alt={member.name} 
+                          className={getAvatarImageStyle(member.name)} 
                         />
                         <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                       </Avatar>
@@ -104,9 +105,17 @@ export default function About() {
                     <div className="text-center mb-4">
                       <h2 className="text-2xl font-bold">{member.name}</h2>
                       <p className="text-gray-500 mb-2">{member.role}</p>
+                      {member.name === "Sabbir Ahmed" && (
+                        <p className="text-sm text-gray-600 mb-3 flex items-center justify-center">
+                          <span>CTO & HR @</span>
+                          <a href="https://codemypixel.com/" target="_blank" rel="noopener noreferrer" className="ml-1 inline-flex items-center">
+                            <img src="https://tinyurl.com/codemypixel2" alt="CodeMyPixel" className="h-5 w-5 object-contain" />
+                          </a>
+                        </p>
+                      )}
                       <p className="text-sm text-gray-400">ID: {member.id}</p>
                       <p className="text-sm text-gray-400 mb-4">{member.education}</p>
-
+                      
                       <div className="flex justify-center space-x-2 mb-4">
                         {member.githubUrl && (
                           <Button variant="outline" size="icon" asChild>
@@ -131,17 +140,17 @@ export default function About() {
                         )}
                       </div>
                     </div>
-
+                    
                     <Separator className="my-4" />
-
+                    
                     <div>
                       <h3 className="font-semibold text-lg mb-2">Bio</h3>
                       <p className="text-gray-600 text-sm mb-4">{member.bio}</p>
-
+                      
                       <h3 className="font-semibold text-lg mb-2">Skills</h3>
                       <div className="flex flex-wrap gap-2">
                         {member.skills.map((skill, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent">{skill}</Badge>
+                          <Badge key={idx} className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent">{skill}</Badge>
                         ))}
                       </div>
                     </div>
@@ -150,12 +159,12 @@ export default function About() {
               ))}
             </div>
           </TabsContent>
-
+          
           {/* Technologies Tab */}
           <TabsContent value="tech" className="mt-8">
             <div className="bg-white rounded-xl shadow-md p-8">
               <h2 className="text-2xl font-bold mb-6 text-center">Technologies We Used</h2>
-
+              
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6">
                 {technologies.map((tech, index) => (
                   <div key={index} className="flex flex-col items-center justify-center p-4 rounded-lg hover:bg-gray-50 transition-colors">
@@ -164,13 +173,13 @@ export default function About() {
                   </div>
                 ))}
               </div>
-
+              
               <div className="mt-10">
                 <h3 className="text-xl font-bold mb-4">Our Development Stack</h3>
                 <p className="text-gray-600 mb-6">
                   We've built the GUB Event Management System using a modern, scalable tech stack:
                 </p>
-
+                
                 <div className="space-y-4">
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h4 className="font-semibold mb-2">Frontend</h4>
@@ -178,14 +187,14 @@ export default function About() {
                       Built with React and TypeScript for type safety. We use Tailwind CSS for styling along with shadcn UI components for a consistent and beautiful user interface.
                     </p>
                   </div>
-
+                  
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h4 className="font-semibold mb-2">Backend</h4>
                     <p className="text-gray-600">
                       Powered by Supabase for database, authentication, and storage needs. We utilize edge functions for serverless operations like email sending.
                     </p>
                   </div>
-
+                  
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h4 className="font-semibold mb-2">Deployment</h4>
                     <p className="text-gray-600">
@@ -196,22 +205,22 @@ export default function About() {
               </div>
             </div>
           </TabsContent>
-
+          
           {/* Project Tab */}
           <TabsContent value="project" className="mt-8">
             <div className="bg-white rounded-xl shadow-md p-8">
               <h2 className="text-2xl font-bold mb-6">About GUB-EMS</h2>
-
+              
               <div className="space-y-6">
                 <div>
                   <h3 className="text-xl font-semibold mb-2">Project Vision</h3>
                   <p className="text-gray-600">
-                    GUB Event Management System is designed to streamline and enhance the event management process at Green University of Bangladesh.
-                    Our goal is to provide an intuitive platform that connects event organizers with participants while simplifying event planning, registration,
+                    GUB Event Management System is designed to streamline and enhance the event management process at Green University of Bangladesh. 
+                    Our goal is to provide an intuitive platform that connects event organizers with participants while simplifying event planning, registration, 
                     and engagement.
                   </p>
                 </div>
-
+                
                 <div>
                   <h3 className="text-xl font-semibold mb-2">Key Features</h3>
                   <ul className="list-disc pl-5 space-y-2 text-gray-600">
@@ -223,24 +232,24 @@ export default function About() {
                     <li>Customizable event pages</li>
                   </ul>
                 </div>
-
+                
                 <div>
                   <h3 className="text-xl font-semibold mb-2">Our Approach</h3>
                   <p className="text-gray-600">
-                    We developed GUB-EMS with a user-centered design approach, focusing on the needs of both event organizers and participants.
+                    We developed GUB-EMS with a user-centered design approach, focusing on the needs of both event organizers and participants. 
                     The system is built to be modular, scalable, and future-proof, allowing for easy expansion and feature additions as needs evolve.
                   </p>
                 </div>
               </div>
-
+              
               <Separator className="my-8" />
-
+              
               <div className="text-center">
                 <h3 className="text-xl font-bold mb-2">Join Us in Transforming Event Management</h3>
                 <p className="text-gray-600 mb-6">
                   We're continually improving GUB-EMS and welcome feedback, contributions, and collaboration.
                 </p>
-
+                
                 <Button size="lg" className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700">
                   <a href="https://github.com/sabbirahmed404/GUB-EMS-2.1" target="_blank" rel="noopener noreferrer" className="flex items-center">
                     <Github className="mr-2 h-5 w-5" />

@@ -13,11 +13,14 @@ The system sends email notifications to users for:
 
 ### Email Service
 - Emails are sent using a Supabase Edge Function with SMTP integration
-- SMTP Configuration:
-  - Host: smtp.gmail.com
-  - Port: 465
-  - Username: msa29.contact@gmail.com
-  - Sender Name: EMS-GUB
+- SMTP Configuration is managed securely through environment variables:
+  - `SMTP_HOST`: The SMTP server (e.g., smtp.gmail.com)
+  - `SMTP_PORT`: The SMTP port (typically 465 for SSL)
+  - `SMTP_USERNAME`: The email account username
+  - `SMTP_PASSWORD`: The email account password (or app password for Gmail)
+  - `SMTP_FROM_EMAIL`: The sender's email address
+  - `SMTP_FROM_NAME`: The sender's display name (e.g., EMS-GUB)
+- Security: SSL/TLS is used for all email communications
 
 ### Components
 

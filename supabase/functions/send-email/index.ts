@@ -1,5 +1,5 @@
-// This is a TypeScript definition for a Supabase Edge Function
-// In your actual deployment, this would be placed in the supabase/functions/send-email/ directory
+// Supabase Edge Function for sending emails via SMTP
+import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
 export interface EmailRequest {
   to: string;
@@ -8,8 +8,8 @@ export interface EmailRequest {
   isHtml?: boolean;
 }
 
-// This is a reference implementation. In the actual deployment, this would use Deno APIs
-export const handler = async (req: Request): Promise<Response> => {
+// Handle the request using Deno's serve function
+Deno.serve(async (req: Request): Promise<Response> => {
   try {
     // CORS headers
     const headers = {
@@ -42,10 +42,60 @@ export const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // In production, this would use the SMTP client to send the email
-    console.log(`Sending email to ${to} with subject: ${subject}`);
+    // Get SMTP configuration from environment variables
+    const smtpHost = Deno.env.get("SMTP_HOST");
+    const smtpPort = Deno.env.get("SMTP_PORT");
+    const smtpUsername = Deno.env.get("SMTP_USERNAME");
+    const smtpPassword = Deno.env.get("SMTP_PASSWORD");
+    const fromName = Deno.env.get("SMTP_FROM_NAME");
+    const fromEmail = Deno.env.get("SMTP_FROM_EMAIL");
+    
+    // Validate that required environment variables are set
+    if (!smtpHost || !smtpPort || !smtpUsername || !smtpPassword || !fromEmail) {
+      const missingVars = [];
+      if (!smtpHost) missingVars.push("SMTP_HOST");
+      if (!smtpPort) missingVars.push("SMTP_PORT");
+      if (!smtpUsername) missingVars.push("SMTP_USERNAME");
+      if (!smtpPassword) missingVars.push("SMTP_PASSWORD");
+      if (!fromEmail) missingVars.push("SMTP_FROM_EMAIL");
+      
+      console.error(`Missing required environment variables: ${missingVars.join(", ")}`);
+      return new Response(
+        JSON.stringify({ 
+          error: "Email configuration incomplete", 
+          details: `Missing environment variables: ${missingVars.join(", ")}` 
+        }),
+        { status: 500, headers }
+      );
+    }
+    
+    // Initialize SMTP client
+    const client = new SmtpClient();
+    
+    // Connect to SMTP server
+    await client.connectTLS({
+      hostname: smtpHost,
+      port: parseInt(smtpPort),
+      username: smtpUsername,
+      password: smtpPassword,
+      tls: true,
+    });
 
-    // Return success response (simulated for this reference)
+    // Send the email
+    await client.send({
+      from: `${fromName || "EMS-GUB"} <${fromEmail}>`,
+      to: to,
+      subject: subject,
+      content: isHtml ? undefined : body,
+      html: isHtml ? body : undefined,
+    });
+
+    // Close the connection
+    await client.close();
+
+    console.log(`Email successfully sent to ${to} with subject: ${subject}`);
+
+    // Return success response
     return new Response(
       JSON.stringify({ success: true }),
       { status: 200, headers }
@@ -69,4 +119,4 @@ export const handler = async (req: Request): Promise<Response> => {
       }
     );
   }
-}; 
+}); 
