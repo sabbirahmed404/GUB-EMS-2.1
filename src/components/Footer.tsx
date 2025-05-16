@@ -67,11 +67,11 @@ export default function Footer() {
               </div>
               <div className="flex items-center">
                 <Phone className="h-5 w-5 mr-3 text-accent" />
-                <span className="text-white/80 text-sm">+880 1234 567890</span>
+                <span className="text-white/80 text-sm">+880 1990 607209</span>
               </div>
               <div className="flex items-center">
                 <Mail className="h-5 w-5 mr-3 text-accent" />
-                <span className="text-white/80 text-sm">contact@gub-ems.com</span>
+                <span className="text-white/80 text-sm">msa29.cse@gmail.com</span>
               </div>
               <a 
                 href="https://green.edu.bd" 

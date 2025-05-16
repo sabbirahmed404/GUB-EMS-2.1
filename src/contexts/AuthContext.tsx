@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { User } from '@supabase/supabase-js';
+import { User, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { sendLoginNotificationEmail, sendWelcomeEmail } from '../lib/email';
 
 export type Role = 'organizer' | 'visitor' | 'admin';
 
@@ -41,6 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [isFetchingProfile, setIsFetchingProfile] = useState(false);
+  const [isNewUser, setIsNewUser] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -68,6 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (!data) {
           console.error('No profile found for user:', userId);
+          setIsNewUser(true);
           throw new Error('No profile found');
         }
 
@@ -75,6 +78,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (mounted) {
           setProfile(data);
           setLoading(false);
+          
+          // Send login notification email
+          if (!isNewUser) {
+            sendLoginNotificationEmail(data.email, data.full_name)
+              .catch(err => console.error('Failed to send login notification:', err));
+          }
         }
       } catch (err) {
         console.error('Error fetching user profile:', err);
@@ -118,21 +127,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session) => {
       console.log('Auth state changed:', { event, userId: session?.user?.id });
       
       if (mounted) {
         if (session?.user) {
           setUser(session.user);
           
-          if (!profile || profile.auth_id !== session.user.id) {
-            if (profileTimeout) clearTimeout(profileTimeout);
+          // Handle different auth events
+          if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+            // For our app, we consider both sign-in and user-updated as important events
+            // SIGNED_IN happens when a user logs in
+            // USER_UPDATED can happen during signup completion
+            const isNewSignUp = !profile || profile.auth_id !== session.user.id;
+            setIsNewUser(isNewSignUp);
             
-            profileTimeout = setTimeout(() => {
-              fetchProfile(session.user.id);
-            }, 1000);
-          } else {
-            setLoading(false);
+            if (isNewSignUp) {
+              if (profileTimeout) clearTimeout(profileTimeout);
+              
+              profileTimeout = setTimeout(() => {
+                fetchProfile(session.user.id);
+              }, 1000);
+
+              // Try to send welcome email if we have an email
+              if (session.user.email) {
+                const name = session.user.user_metadata?.full_name || 
+                            session.user.user_metadata?.name || 
+                            'New User';
+                            
+                sendWelcomeEmail(session.user.email, name)
+                  .catch(err => console.error('Failed to send welcome email:', err));
+              }
+            } else {
+              setLoading(false);
+              
+              // Send login notification for returning users on SIGNED_IN events only
+              if (event === 'SIGNED_IN' && profile?.email) {
+                sendLoginNotificationEmail(profile.email, profile.full_name)
+                  .catch(err => console.error('Failed to send login notification:', err));
+              }
+            }
           }
         } else {
           setUser(null);
